@@ -6,8 +6,10 @@ name = "pypi"
 [packages]
 numpy = "*"
 hexalattice = "*"
+networkx = "*"
 
 [dev-packages]
+ipykernel = "*"
 
 [requires]
 python_version = "3.8"

@@ -178,7 +178,7 @@ class graphManager():
     ) for _ in range(mapSize)]) * 0.3
     step = -1
     totalPath = []
-    spotSection = self.allPaths(self.binaryToGraph(self.mapDefinition[0]))
+    spotSection = self.allPaths(self.binaryToGraph(self.mapDefinition[mapID]))
     for (secNum, section) in enumerate(spotSection):
       if secNum == 0 or secNum == len(section) - 1:
         for hexa in section:

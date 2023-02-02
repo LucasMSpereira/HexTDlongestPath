@@ -55,10 +55,20 @@ ga_instance = pygad.GA(
   mutation_percent_genes = 10,
   save_solutions = True
 )
-ga_instance.run()
+ga_instance.run() # run optimization
+# development of fitness value over optimization
 ga_instance.plot_fitness()
+# Number of new solutions per generation
 ga_instance.plot_new_solution_rate()
+# index and number of steps needed in best map
 best = sample.bestMap()
-print(best)
+# number of steps needed in initial map
+initial = sample.totalSteps(sample.mapDefinition[0])
+print(f"""
+Best map takes {best[0]} steps.
+Initial map takes {initial} steps.
+Improvement of {(best[0] - initial)/initial * 100}
+""")
+sample.plotMesh(0)
 sample.plotMesh(best[1])
 # %%

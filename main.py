@@ -1,15 +1,16 @@
 #%%
+# import pygad
 import datetime
 import utilities
-import math
 #%%
 sample = utilities.graphManager(
   # initial map string
   "4111011003111111101011011111101111101110111111111111111111110111011111011111101101011111113001101112",
   10, 10, # n° of rows and cols
-  [2, 5, 9], # rows of each flag
-  [1, 4, 10] # columns of each flag
+  [0, 9], # rows of each flag
+  [9, 0] # columns of each flag
 )
+
 #%%
 def pathLength(binaryMap: list, solution_idx) -> int:
   """
@@ -20,15 +21,12 @@ def pathLength(binaryMap: list, solution_idx) -> int:
   # guarantee a few basic map properties
   binaryMap = sample.mapCheck(binaryMap)
   # map string -> adjacency matrix -> graph
-  mapGraph = sample.binaryToMap(binaryMap)
-  # nodes and length of each section
+  mapGraph = sample.binaryToGraph(binaryMap)
+  # nodes of each section
   pathsInfo = sample.allPaths(mapGraph)
-  sectionLength = [sec[1] for sec in pathsInfo]
-  # return 0 in case of path disconnection
-  if math.prod(sectionLength) == 0:
-    return 0
-  else: # total path length
-    return sum(sectionLength)
+  print(pathsInfo)
+  # return total size of path (or zero in case of disconnection)
+  return sample.totalSteps(pathsInfo)
 
 def callback_gen(ga_instance):
   """callback function"""
@@ -44,10 +42,8 @@ def callback_gen(ga_instance):
   # store path length of current best solution
   sample.storeLength(ga_instance.best_solution()[1])
 
-ga_instance = pygad.GA(
-  # kwargs...,
-  fitness_func = fitness_function,
-  callback_generation = callback_gen
-  # kwargs...
-)
-ga_instance.run()
+# ga_instance = pygad.GA(
+#   fitness_func = pathLength,
+#   callback_generation = callback_gen
+# )
+# ga_instance.run()

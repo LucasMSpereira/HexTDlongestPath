@@ -16,20 +16,23 @@ class graphManager():
     numRow: int, numCol: int,
     rowsOfFlags: list, colsOfFlags: int
   ):
-    self.flagRows = rowsOfFlags # rows of each flag
-    self.flagCols = colsOfFlags # columns of each flag
     # dictionary to store spots (spawn-flag-base)
     self.spot = {"spawn": [], "flag": [], "base": []}
     # store length of each map
     self.mapLength = []
     # number of rows and columns of full map
     self.nRow = numRow; self.nCol = numCol
+    # get hexagon IDs of flags
+    for (flagRow, flagCol) in zip(rowsOfFlags, colsOfFlags):
+      self.spot["flag"].append(
+        flagRow * self.nCol + flagCol
+      )
     # list to store map definitions as binary lists
     self.mapDefinition = [self.stringToBinary(initialMapString)]
-    initialMapGraph = self.binaryToMap(self.mapDefinition[0])
-    # nodes and length of each section
+    initialMapGraph = self.binaryToGraph(self.mapDefinition[0])
+    # nodes of each section
     pathsInfo = self.allPaths(initialMapGraph)
-    sectionLength = [sec[1] for sec in pathsInfo]
+    sectionLength = [len(sec) for sec in pathsInfo]
     # error in case of disconnection in initial map
     if math.prod(sectionLength) == 0:
       x = []
@@ -38,7 +41,18 @@ class graphManager():
           x.append(section)
       raise Exception(f"Initial map has disconnection in section(s) {x}.")
     else: # total path length
-       self.mapLength.append(sum(sectionLength))
+       self.storeLength(self.totalSteps(pathsInfo))
+
+  def allPaths(self, mapGraph):
+    """
+    Get paths for each section and
+    their respective lengths
+    """
+    intermediatePath = []
+    # A* in each section:
+    for (source, target) in pairwise(itertools.chain(*self.spot.values())):
+      intermediatePath.append(self.aStarPathing(mapGraph, source, target))
+    return intermediatePath
 
   def aStarPathing(self, _graph, _source, _target):
     """
@@ -46,25 +60,24 @@ class graphManager():
     target nodes in given graph
     """
     try: # shortest path by A* and its length
-      p = nx.astar_path(_graph, _source, _target)
-      return p, len(p)
+      return nx.astar_path(_graph, _source, _target)
     except nx.NetworkXNoPath: # return 0 in case of disconnection
-      return [], 0
+      return []
 
-  def binaryToMap(self, binaryDefinition: list):
+  def binaryToGraph(self, binaryDefinition: list):
     """
     Get adjacency graph from binary map representation
     """
-    # adjacency between hexagons. list of lists.
-    # list x refers to hexagon with ID x, and
-    # contains the IDs of its neighbors
+    # each key x refers to hexagon with ID x.
+    # Starts from 0 and goes left to right, top to bottom.
+    # respective values in dict contain the IDs of
+    # neighbouring hexagons
     connectivity = {}
-    hexa = -1
+    hexa = 0
     while hexa < self.nRow * self.nCol:
-      hexa += 1
       connectivity[hexa] = []
-      nodeRow = int(math.ceil(hexa/self.nCol))
-      if nodeRow % 2 != 0: # odd lines
+      nodeRow = int(math.ceil((hexa + 0.1)/self.nCol))
+      if nodeRow % 2 != 0 or hexa == 0: # odd lines
         connectivity[hexa].append(hexa + 1)
         connectivity[hexa].append(hexa - self.nCol)
         connectivity[hexa].append(hexa - self.nCol - 1)
@@ -72,15 +85,15 @@ class graphManager():
         connectivity[hexa].append(hexa + self.nCol - 1)
         connectivity[hexa].append(hexa + self.nCol)
         # first hexagon in odd lines
-        if hexa in [1 + self.nCol * i for i in range(self.nRow)]:
-          connectivity[hexa][2] = 0
-          connectivity[hexa][3] = 0
-          connectivity[hexa][4] = 0
-        if hexa in [self.nCol + self.nCol * i for i in range(self.nRow)]:
-          connectivity[hexa][0] = 0 # right of last hexagon in odd lines
+        if hexa in [self.nCol * i for i in range(self.nRow)]:
+          connectivity[hexa][2] = -1
+          connectivity[hexa][3] = -1
+          connectivity[hexa][4] = -1
+        if hexa in [self.nCol + self.nCol * i - 1 for i in range(self.nRow)]:
+          connectivity[hexa][0] = -1
         if nodeRow == self.nRow:
-          connectivity[hexa][4] = 0
-          connectivity[hexa][5] = 0
+          connectivity[hexa][5] = -1
+          connectivity[hexa][4] = -1
       else: # even lines
         connectivity[hexa].append(hexa + 1)
         connectivity[hexa].append(hexa - self.nCol + 1)
@@ -89,30 +102,40 @@ class graphManager():
         connectivity[hexa].append(hexa + self.nCol)
         connectivity[hexa].append(hexa + self.nCol + 1)
         # left of first hexagon in even lines
-        if hexa in [1 + self.nCol * i for i in range(self.nRow)]:
-          connectivity[hexa][3] = 0
+        if hexa in [self.nCol * i for i in range(self.nRow)]:
+          connectivity[hexa][3] = -1
         # last line of hexagons
         if nodeRow == self.nRow:
-          connectivity[hexa][4] = 0; connectivity[hexa][5] = 0
+          connectivity[hexa][5] = -1
+          connectivity[hexa][4] = -1
         # last hexagon in even lines
-        if hexa in [self.nCol + self.nCol * i for i in range(self.nRow)]:
-          connectivity[hexa][0] = 0; connectivity[hexa][1] = 0; connectivity[hexa][5] = 0
+        if hexa in [self.nCol + self.nCol * i - 1 for i in range(self.nRow)]:
+          connectivity[hexa][5] = -1
+          connectivity[hexa][1] = -1
+          connectivity[hexa][0] = -1
+      hexa += 1
     # include holes
     voidHexas = [] # IDs of void hexagons
     for (hexID, value) in enumerate(binaryDefinition):
       if value == 0:
         voidHexas.append(hexID)
-    # replace negative IDs with zeros.
+    # correct range of IDs (0 -> nHexas - 1).
     # remove references involving void hexagons as well
     for hexa in range(len(connectivity)):
       if hexa in voidHexas: # void hexagons don't reference other hexagons
-        for hexaID in range(len(connectivity[hexa])):
-          connectivity[hexa][hexaID] = 0
+        connectivity[hexa][:] = -np.ones(len(connectivity[hexa]), int)
       else:
         for hexaID in range(len(connectivity[hexa])):
           # nullify negative references. and no one references void hexagons
-          if connectivity[hexa][hexaID] < 0 or connectivity[hexa][hexaID] in voidHexas:
-            connectivity[hexa][hexaID] = 0
+          if connectivity[hexa][
+            hexaID] < 0 or connectivity[hexa][hexaID] in voidHexas or connectivity[
+            hexa][hexaID] > self.nRow * self.nCol - 1:
+            connectivity[hexa][hexaID] = -1
+    # cleanup incorrect connections (-1)
+    for (hexa, _) in enumerate(connectivity):
+      for neighbor in reversed(range(len(connectivity[hexa]))):
+        if connectivity[hexa][neighbor] == -1:
+          connectivity[hexa].pop(neighbor)
     # return graph
     return nx.from_dict_of_lists(connectivity)
   
@@ -133,35 +156,57 @@ class graphManager():
 
   def plotGraph(self, mapID: int):
     """Plot graph of a certain map"""
-    nx.draw(self.binaryToMap(self.mapDefinition[mapID]))
+    nx.draw(self.binaryToGraph(self.mapDefinition[mapID]))
 
   def plotMesh(self, mapID: int):
     """Plot hexagon lattice"""
-    colors = np.zeros([len(self.mapDefinition[mapID]), 3])
+    mapSize = len(self.mapDefinition[mapID])
+    # initial full map with shades of grey
+    colors = np.zeros([mapSize, 3]) + np.array([np.fromiter(
+      itertools.repeat(np.random.rand(), times = 3), float
+    ) for _ in range(mapSize)]) * 0.3
+    step = -1
+    totalPath = []
+    spotSection = self.allPaths(self.binaryToGraph(self.mapDefinition[0]))
+    for (secNum, section) in enumerate(spotSection):
+      if secNum == 0 or secNum == len(section) - 1:
+        for hexa in section:
+          step += 1
+          totalPath.append(hexa)
+      else: # intermediate section
+        for hexa in range(1, len(section) - 1):
+          step += 1
+          totalPath.append(section[hexa])
+    for (stepID, hexa) in enumerate(totalPath):
+      colors[hexa, :] = [0, 1 - 0.75 * stepID / len(totalPath), 0]
+    # remove void hexagons
+    for hexa in range(mapSize):
+      if self.mapDefinition[mapID][hexa] == 0:
+        colors[hexa, :] = 1
     for spawn in self.spot["spawn"]:
-      colors[spawn, :] = 0
+      colors[spawn, :] = [0.8, 0, 0]
     for flag in self.spot["flag"]:
-      colors[flag, :] = 0.4
-    colors[self.spot["base"], :] = 0.8
-    hex_centers, _ = create_hex_grid(
+      colors[flag, :] = [255/255, 128/255, 0]
+    colors[self.spot["base"], :] = [0, 0, 0.8]
+    
+    _, ax = plt.subplots()
+    create_hex_grid(
       nx = self.nCol, ny = self.nRow, do_plot = True,
       face_color = colors,
-      edge_color = (0.25, 0.25, 0.25),
-      plotting_gap = 0.1)
+      edge_color = (1, 1, 1),
+      h_ax = ax,
+      plotting_gap = 0.05)
 
+    ax.invert_yaxis()
     plt.show()
 
   def storeLength(self, length: int):
-    """Store length of path"""
-    self.sectionLength.append(length)
+    """Store length of entire path"""
+    self.mapLength.append(length)
 
   def storeMap(self, mapDef: list):
-    """Store map"""
+    """Store binary representation of map"""
     self.mapDefinition.append(mapDef)
-
-  def storePath(self, nodeList: list):
-    """Store node list"""
-    self.sectionPath.append(nodeList)
 
   def stringToBinary(self, mapString: str):
     """
@@ -185,22 +230,20 @@ class graphManager():
         self.spot["spawn"].append(index)
       elif int(code) == 3: # flag
         binaryList.append(1)
-        self.spot["flag"].append(index)
       elif int(code) == 4: # player's base
         binaryList.append(1)
         self.spot["base"].append(index)
     return binaryList
 
-  def allPaths(self, mapGraph):
-    """
-    Get paths for each section and
-    their respective lengths
-    """
-    intermediatePath = []
-    # A* in each section:
-    for (source, target) in pairwise(itertools.chain(*self.spot.values())):
-      intermediatePath.append(self.aStarPathing(mapGraph, source, target))
-    return intermediatePath
+  def totalSteps(self, section: list) -> int:
+    sectionLength = [len(sec) for sec in section]
+    # return 0 in case of path disconnection
+    if math.prod(sectionLength) == 0:
+      return 0
+    else:
+      # total path length
+      # (discounting repetition among sections)
+      return sum(sectionLength) - (len(sectionLength) - 1)
 
 # available in standard module itertools from version 3.10
 def pairwise(iterable):

@@ -1,5 +1,5 @@
 #%%
-# import pygad
+import pygad
 import datetime
 import utilities
 #%%
@@ -41,8 +41,9 @@ def callback_gen(ga_instance):
   # store path length of current best solution
   sample.storeLength(ga_instance.best_solution()[1])
 
-# ga_instance = pygad.GA(
-#   fitness_func = pathLength,
-#   callback_generation = callback_gen
-# )
-# ga_instance.run()
+if False:
+  ga_instance = pygad.GA(
+    fitness_func = pathLength,
+    callback_generation = callback_gen
+  )
+  # ga_instance.run()

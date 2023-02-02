@@ -4,9 +4,10 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-numpy = "*"
 hexalattice = "*"
 networkx = "*"
+numpy = "~=1.23.5"
+pygad = "*"
 
 [dev-packages]
 ipykernel = "*"

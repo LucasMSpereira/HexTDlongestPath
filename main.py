@@ -24,7 +24,6 @@ def pathLength(binaryMap: list, solution_idx) -> int:
   mapGraph = sample.binaryToGraph(binaryMap)
   # nodes of each section
   pathsInfo = sample.allPaths(mapGraph)
-  print(pathsInfo)
   # return total size of path (or zero in case of disconnection)
   return sample.totalSteps(pathsInfo)
 

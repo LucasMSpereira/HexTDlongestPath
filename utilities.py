@@ -64,6 +64,17 @@ class graphManager():
     except nx.NetworkXNoPath: # return 0 in case of disconnection
       return []
 
+  def bestMap(self):
+    """
+    Return number of steps of shortest path in
+    best map, and its index
+    """
+    # lengths of shortest path in each map
+    totalLength = list(map(self.totalSteps, self.mapDefinition))
+    # size of longest path
+    longest = max(totalLength)
+    return longest, totalLength.index(longest)
+
   def binaryToGraph(self, binaryDefinition: list):
     """
     Get adjacency graph from binary map representation
@@ -177,16 +188,20 @@ class graphManager():
         for hexa in range(1, len(section) - 1):
           step += 1
           totalPath.append(section[hexa])
-    for (stepID, hexa) in enumerate(totalPath):
-      colors[hexa, :] = [0, 1 - 0.75 * stepID / len(totalPath), 0]
-    # remove void hexagons
+    # void hexagons in white
     for hexa in range(mapSize):
       if self.mapDefinition[mapID][hexa] == 0:
         colors[hexa, :] = 1
+    # shortest path in shades of green
+    for (stepID, hexa) in enumerate(totalPath):
+      colors[hexa, :] = [0, 1 - 0.75 * stepID / len(totalPath), 0]
+    # spawn in red
     for spawn in self.spot["spawn"]:
       colors[spawn, :] = [0.8, 0, 0]
+    # flags in orange
     for flag in self.spot["flag"]:
       colors[flag, :] = [255/255, 128/255, 0]
+    # base in blue
     colors[self.spot["base"], :] = [0, 0, 0.8]
     
     _, ax = plt.subplots()
@@ -235,14 +250,21 @@ class graphManager():
         self.spot["base"].append(index)
     return binaryList
 
-  def totalSteps(self, section: list) -> int:
-    sectionLength = [len(sec) for sec in section]
+  def totalSteps(self, binaryMap: list) -> int:
+    """
+    Return total number of steps in shortest path
+    for given binary representation of map
+    """
+    mapGraph = self.binaryToGraph(binaryMap)
+    # nodes of each section
+    pathsInfo = self.allPaths(mapGraph)
+    sectionLength = [len(sec) for sec in pathsInfo]
     # return 0 in case of path disconnection
     if math.prod(sectionLength) == 0:
       return 0
     else:
       # total path length
-      # (discounting repetition among sections)
+      # (discounting hexagon repetition among sections)
       return sum(sectionLength) - (len(sectionLength) - 1)
 
 # available in standard module itertools from version 3.10

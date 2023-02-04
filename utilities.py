@@ -1,5 +1,6 @@
 from hexalattice.hexalattice import *
-import numpy
+import pygad
+import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 import math
@@ -267,9 +268,44 @@ class graphManager():
       # (discounting hexagon repetition among sections)
       return sum(sectionLength) - (len(sectionLength) - 1)
 
+def optimize(
+  population: int, generations: int, sampleObject,
+  _pathLength, callback
+) -> int:
+  """Run EA for given population size and number of generations"""
+  ga_instance = pygad.GA(
+    fitness_func = _pathLength,
+    on_generation = callback,
+    num_generations = generations,
+    sol_per_pop = population,
+    num_parents_mating = round(0.1 * population) if population > 10 else 1,
+    num_genes = sampleObject.nRow * sampleObject.nCol,
+    gene_space = [0, 1],
+    parent_selection_type = "rank",
+    crossover_type = "single_point",
+    mutation_type = "random",
+    mutation_percent_genes = 10,
+    suppress_warnings = True,
+    save_solutions = True
+  )
+  ga_instance.run() # run optimization
+  return ga_instance.best_solution()[1]
+
 # available in standard module itertools from version 3.10
 def pairwise(iterable):
   # pairwise('ABCDEFG') --> AB BC CD DE EF FG
   a, b = itertools.tee(iterable)
   next(b, None)
   return zip(a, b)
+
+def tellFlagsRowsAndCols(initialMapString: str, nRow: int, nCol: int):
+  flagPos = {"row": [], "col": []}
+  for (index, code) in enumerate(initialMapString):
+    if int(code) == 3:
+      row = int(math.ceil((index + 0.1)/nCol))
+      flagPos["row"].append(row - 1)
+      flagPos["col"].append(index - (row - 1) * nCol)
+  for (flagNum, _) in enumerate(flagPos["row"]):
+    print(f"""
+    Flag in row {flagPos["row"][flagNum]} column {flagPos["col"][flagNum]}
+    """)

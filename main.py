@@ -1,14 +1,19 @@
 #%%
-import pygad
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy
+import itertools
 import datetime
 import utilities
 #%%
-mapRows = 10
-mapCols = 10
+mapRow = 10
+mapCol = 10
+mapString = "4111011003111111101011011111101111101110111111111111111111110111011111011111101101011111113001101112"
+utilities.tellFlagsRowsAndCols(mapString, mapRow, mapCol)
+#%%
 sample = utilities.graphManager(
-  # initial map string
-  "4111011003111111101011011111101111101110111111111111111111110111011111011111101101011111113001101112",
-  mapRows, mapCols, # n° of rows and cols
+  mapString, # initial map string
+  mapRow, mapCol, # n° of rows and cols
   [0, 9], # rows of each flag
   [9, 0] # columns of each flag
 )
@@ -39,36 +44,4 @@ def callback_gen(ga_instance):
   # store path length of current best solution
   sample.storeLength(ga_instance.best_solution()[1])
 
-#%%
-ga_instance = pygad.GA(
-  fitness_func = pathLength,
-  on_generation = callback_gen,
-  num_generations = 500,
-  num_parents_mating = 4,
-  sol_per_pop = 8,
-  num_genes = mapRows * mapCols,
-  gene_space = [0, 1],
-  parent_selection_type = "sss",
-  keep_parents = 1,
-  crossover_type = "single_point",
-  mutation_type = "random",
-  mutation_percent_genes = 10,
-  save_solutions = True
-)
-ga_instance.run() # run optimization
-# development of fitness value over optimization
-ga_instance.plot_fitness()
-# Number of new solutions per generation
-ga_instance.plot_new_solution_rate()
-# index and number of steps needed in best map
-best = sample.bestMap()
-# number of steps needed in initial map
-initial = sample.totalSteps(sample.mapDefinition[0])
-print(f"""
-Best map takes {best[0]} steps.
-Initial map takes {initial} steps.
-Improvement of {(best[0] - initial)/initial * 100}
-""")
-sample.plotMesh(0)
-sample.plotMesh(best[1])
 # %%

@@ -8,6 +8,8 @@ hexalattice = "*"
 networkx = "*"
 numpy = "~=1.23.5"
 pygad = "*"
+scipy = "*"
+matplotlib = "*"
 
 [dev-packages]
 ipykernel = "*"

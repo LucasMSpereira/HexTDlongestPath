@@ -270,15 +270,15 @@ class graphManager():
 
 def optimize(
   population: int, generations: int, sampleObject,
-  _pathLength, callback
+  _pathLength
 ) -> int:
   """Run EA for given population size and number of generations"""
   ga_instance = pygad.GA(
     fitness_func = _pathLength,
-    on_generation = callback,
     num_generations = generations,
     sol_per_pop = population,
-    num_parents_mating = round(0.1 * population) if population > 10 else 1,
+    num_parents_mating = round(0.2 * population) if population > 10 else 1,
+    keep_elitism = 0,
     num_genes = sampleObject.nRow * sampleObject.nCol,
     gene_space = [0, 1],
     parent_selection_type = "rank",
@@ -291,7 +291,7 @@ def optimize(
   ga_instance.run() # run optimization
   return ga_instance.best_solution()[1]
 
-# available in standard module itertools from version 3.10
+# available in standard module itertools from version 3.10 onwards
 def pairwise(iterable):
   # pairwise('ABCDEFG') --> AB BC CD DE EF FG
   a, b = itertools.tee(iterable)

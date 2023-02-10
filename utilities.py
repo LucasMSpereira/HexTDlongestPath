@@ -1,4 +1,5 @@
 from hexalattice.hexalattice import *
+import random
 import pygad
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,7 +16,7 @@ class graphManager():
   def __init__(
     self, initialMapString: str,
     numRow: int, numCol: int,
-    rowsOfFlags: list, colsOfFlags: int
+    rowsOfFlags: list, colsOfFlags: list
   ):
     # dictionary to store spots (spawn-flag-base)
     self.spot = {"spawn": [], "flag": [], "base": []}
@@ -76,10 +77,8 @@ class graphManager():
     longest = max(totalLength)
     return longest, totalLength.index(longest)
 
-  def binaryToGraph(self, binaryDefinition: list):
-    """
-    Get adjacency graph from binary map representation
-    """
+  def binaryToConnections(self, binaryDefinition: list):
+    """Hexagon connectivity from binary map definition"""
     # each key x refers to hexagon with ID x.
     # Starts from 0 and goes left to right, top to bottom.
     # respective values in dict contain the IDs of
@@ -148,8 +147,14 @@ class graphManager():
       for neighbor in reversed(range(len(connectivity[hexa]))):
         if connectivity[hexa][neighbor] == -1:
           connectivity[hexa].pop(neighbor)
-    # return graph
-    return nx.from_dict_of_lists(connectivity)
+    
+    return connectivity
+
+  def binaryToGraph(self, binaryDefinition: list):
+    """
+    Get adjacency graph from binary map representation
+    """
+    return nx.from_dict_of_lists(self.binaryToConnections(binaryDefinition))
   
   def mapCheck(self, mapDefinition: list):
     """
@@ -174,9 +179,7 @@ class graphManager():
     """Plot hexagon lattice"""
     mapSize = len(self.mapDefinition[mapID])
     # initial full map with shades of grey
-    colors = np.zeros([mapSize, 3]) + np.array([np.fromiter(
-      itertools.repeat(np.random.rand(), times = 3), float
-    ) for _ in range(mapSize)]) * 0.3
+    colors = np.zeros([mapSize, 3]) + np.array([np.fromiter(itertools.repeat(np.random.rand(), times = 3), float) for _ in range(mapSize)]) * 0.3
     step = -1
     totalPath = []
     spotSection = self.allPaths(self.binaryToGraph(self.mapDefinition[mapID]))
@@ -195,13 +198,13 @@ class graphManager():
         colors[hexa, :] = 1
     # shortest path in shades of green
     for (stepID, hexa) in enumerate(totalPath):
-      colors[hexa, :] = [0, 1 - 0.75 * stepID / len(totalPath), 0]
+      colors[hexa, :] = [0, 1 - 0.45 * np.random.rand(), 0]
     # spawn in red
     for spawn in self.spot["spawn"]:
       colors[spawn, :] = [0.8, 0, 0]
     # flags in orange
-    for flag in self.spot["flag"]:
-      colors[flag, :] = [255/255, 128/255, 0]
+    for (flagNum, hexa) in enumerate(self.spot["flag"]):
+      colors[hexa, :] = list(map(lambda x: x * (1 - 0.5 * flagNum / len(self.spot["flag"])), [1, 128 / 255, 0]))
     # base in blue
     colors[self.spot["base"], :] = [0, 0, 0.8]
     
@@ -298,14 +301,75 @@ def pairwise(iterable):
   next(b, None)
   return zip(a, b)
 
-def tellFlagsRowsAndCols(initialMapString: str, nRow: int, nCol: int):
+def tellFlagsRowsAndCols(initialMapString: str, nRow: int, nCol: int, printInfo = True):
   flagPos = {"row": [], "col": []}
   for (index, code) in enumerate(initialMapString):
     if int(code) == 3:
       row = int(math.ceil((index + 0.1)/nCol))
       flagPos["row"].append(row - 1)
       flagPos["col"].append(index - (row - 1) * nCol)
-  for (flagNum, _) in enumerate(flagPos["row"]):
-    print(f"""
-    Flag in row {flagPos["row"][flagNum]} column {flagPos["col"][flagNum]}
-    """)
+  if printInfo:
+    for (flagNum, _) in enumerate(flagPos["row"]):
+      print(f"""
+      Flag in row {flagPos["row"][flagNum]} column {flagPos["col"][flagNum]}
+      """)
+  else:
+    return flagPos
+
+class dataset():
+  """Dataset generation utilities"""
+  
+  def __init__(self):
+
+    self.graphUtils = 0
+  
+  def randomConnectivity(self, nRow: int, nCol: int, flagAmount: int = 2, density: float = 0.8):
+    """Create random connectivity for current sample"""
+    mapSize = nRow * nCol
+    fullHexa = math.ceil(mapSize * density)
+    # define basic map topology
+    randomMap = list(np.ones(fullHexa, dtype = int))
+    randomMap.extend(list(np.zeros(mapSize - fullHexa, dtype = int)))
+    random.shuffle(randomMap)
+    # choose spawn, flag(s) and player's base locations
+    indices = random.sample(range(0, mapSize), k = flagAmount + 2)
+    for (pos, index) in enumerate(indices):
+      if pos == 0: # spawn in first index
+        randomMap[index] = 2
+      elif pos == len(indices) - 1: # player's base in last index
+        randomMap[index] = 4
+      else: # intermediary indices recieve flags
+        randomMap[index] = 3
+    mapString = ''.join(map(str, randomMap))
+    try:
+      self.graphUtils = graphManager(mapString, nRow, nCol, *list(tellFlagsRowsAndCols(
+        mapString, nRow, nCol, printInfo = False
+      ).values()))
+    except:
+      return 0, 0, 0
+    # return connectivity for map generated, and indices
+    return self.graphUtils.binaryToConnections(self.graphUtils.mapDefinition[0]), indices, self.graphUtils.mapDefinition[0]
+
+  def generateMap(self, nRow: int, nCol: int):
+    """Generate random map for current sample"""
+    mapCheck = False
+    # generate random conectivity and make verifications
+    while not mapCheck:
+      connection, spotID, binary = self.randomConnectivity(nRow, nCol)
+      # discard map in case of initial string problem
+      if connection == 0:
+        break
+      # discard map in case of disconnection
+      if self.graphUtils.totalSteps(binary) == 0:
+        break
+      # discard map in case of spot adjacency
+      for (reference, neighbor) in itertools.permutations(spotID, r = 2):
+        if neighbor in connection[reference]:
+          break
+      else:
+        mapCheck = True
+    try:
+      # return graph representation of map
+      return nx.from_dict_of_lists(connection)
+    except: # discard map in case of isolated hexagon
+      return self.generateMap(nRow, nCol)

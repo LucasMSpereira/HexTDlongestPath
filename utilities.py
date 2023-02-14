@@ -74,8 +74,11 @@ class graphManager():
     # lengths of shortest path in each map
     totalLength = list(map(self.totalSteps, self.mapDefinition))
     # size of longest path
-    longest = max(totalLength)
-    return longest, totalLength.index(longest)
+    longest = (0, 0)
+    for length in enumerate(totalLength):
+      if length[1] > longest[1]:
+        longest = length
+    return longest
 
   def binaryToConnections(self, binaryDefinition: list):
     """Hexagon connectivity from binary map definition"""
@@ -273,12 +276,13 @@ class graphManager():
 
 def optimize(
   population: int, generations: int, sampleObject,
-  _pathLength
+  _pathLength, callback = None
 ) -> int:
   """Run EA for given population size and number of generations"""
   ga_instance = pygad.GA(
     fitness_func = _pathLength,
     num_generations = generations,
+    callback_generation = callback,
     sol_per_pop = population,
     num_parents_mating = round(0.2 * population) if population > 10 else 1,
     keep_elitism = 0,
@@ -348,7 +352,9 @@ class dataset():
     except:
       return 0, 0, 0
     # return connectivity for map generated, and indices
-    return self.graphUtils.binaryToConnections(self.graphUtils.mapDefinition[0]), indices, self.graphUtils.mapDefinition[0]
+    return self.graphUtils.binaryToConnections(
+      self.graphUtils.mapDefinition[0]
+    ), indices, self.graphUtils.mapDefinition[0]
 
   def generateMap(self, nRow: int, nCol: int):
     """Generate random map for current sample"""

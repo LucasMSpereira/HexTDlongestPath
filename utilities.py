@@ -1,4 +1,5 @@
 from hexalattice.hexalattice import *
+import h5py
 import random
 import pygad
 import numpy as np
@@ -68,8 +69,8 @@ class graphManager():
 
   def bestMap(self):
     """
-    Return number of steps of shortest path in
-    best map, and its index
+    Return index of best map and number of
+    steps of shortest path
     """
     # lengths of shortest path in each map
     totalLength = list(map(self.totalSteps, self.mapDefinition))
@@ -228,7 +229,7 @@ class graphManager():
 
   def storeMap(self, mapDef: list):
     """Store binary representation of map"""
-    self.mapDefinition.append(mapDef)
+    self.mapDefinition.append(list(map(int, mapDef)))
 
   def stringToBinary(self, mapString: str):
     """
@@ -305,7 +306,8 @@ def pairwise(iterable):
   next(b, None)
   return zip(a, b)
 
-def tellFlagsRowsAndCols(initialMapString: str, nRow: int, nCol: int, printInfo = True):
+def tellFlagsRowsAndCols(initialMapString: str, nCol: int, printInfo = True):
+  """Print rows and columns of flags"""
   flagPos = {"row": [], "col": []}
   for (index, code) in enumerate(initialMapString):
     if int(code) == 3:
@@ -321,14 +323,111 @@ def tellFlagsRowsAndCols(initialMapString: str, nRow: int, nCol: int, printInfo 
     return flagPos
 
 class dataset():
-  """Dataset generation utilities"""
   
-  def __init__(self):
-
+  """Utilities for dataset generation and processing"""
+  
+  def __init__(self, filePath = "", amountOfSamples: int = 0, nRow: int = 0, nCol: int = 0):
+    self.nRow = nRow # number of rows in maps
+    self.nCol = nCol # number of cols in maps
     self.graphUtils = 0
+    self.attempt = 0
+    if amountOfSamples != 0:
+      self.nSample = amountOfSamples # number of samples to be generated
+      # create hdf5 file to store data
+      self.fileID = h5py.File(
+        str(filePath) + "/" + str(random.randint(1, 10000)) + "_" + str(amountOfSamples) + ".hdf5",
+        'w'
+      )
+      # dataset to store initial map string
+      self.initialDS = self.fileID.create_dataset("initial_string", (amountOfSamples,))
+      # dataset to store optimal map string
+      self.optimalDS = self.fileID.create_dataset("optimal_string", (amountOfSamples,))
+      # dataset to store length of optimal shortest path (OSP)
+      self.ospDS = self.fileID.create_dataset("OSP_length", (amountOfSamples,), dtype = 'int')
   
+  def conciseMapEncoding(self, mapIndex: int) -> str:
+    """
+    Alternative map representation that encodes
+    map topology (0s and 1s) and spots (spawn-flags-base)
+    """
+    for spotClass in self.graphUtils.spot.keys():
+      for (pos, spotID) in enumerate(self.graphUtils.spot[spotClass]):
+        if spotClass == "spawn":
+          self.graphUtils.mapDefinition[mapIndex][spotID] = 2
+        elif spotClass == "flag":
+          self.graphUtils.mapDefinition[mapIndex][spotID] = 3 + pos
+        elif spotClass == "base":
+          self.graphUtils.mapDefinition[mapIndex][spotID] = 3 + len(self.graphUtils.spot["flag"])
+    return ''.join(map(str, self.graphUtils.mapDefinition[mapIndex]))
+
+  def generateDataset(self):
+    """Generate dataset with requested amount of samples"""
+    for sample in range(self.nSample):
+      OSPlength = 0
+      while OSPlength == 0: # filter problematic OSP
+        print(f"Generating sample {sample + 1}")
+        self.generateMap() # create random map
+        # index and OSP length of optimal map
+        optimalMapIndex, OSPlength = self.optimizeSample()
+      self.saveDataPoint(sample, optimalMapIndex, OSPlength)
+    self.fileID.close()
+
+  def generateMap(self):
+      """Generate random map for current sample"""
+      mapCheck = False
+      # generate random conectivity and make verifications
+      while not mapCheck:
+        connection, spotID, binary = self.randomConnectivity(self.nRow, self.nCol)
+        # discard map in case of initial string problem
+        if connection == 0:
+          break
+        # discard map in case of disconnection
+        if self.graphUtils.totalSteps(binary) == 0:
+          break
+        # discard map in case of spot adjacency
+        for (reference, neighbor) in itertools.permutations(spotID, r = 2):
+          if neighbor in connection[reference]:
+            break
+        else:
+          mapCheck = True
+      try:
+        # attempt to create graph representation of map
+        nx.from_dict_of_lists(connection)
+      except: # discard map in case of isolated hexagon
+        return self.generateMap()
+
+  def optimizeSample(self):
+    """
+    Optimize map of current sample. Return index of
+    this sample's optimal map, and OSP length
+    """
+    def pathLength(binaryMap: list, solution_idx) -> int:
+      """
+      Objective to be maximized. Receives binary list
+      indicating hexagons that are absent (0) or
+      present (1). Returns length of shortest path
+      """
+      # guarantee a few basic map properties
+      binaryMap = self.graphUtils.mapCheck(binaryMap)
+      # return total size of path (or zero in case of disconnection)
+      return self.graphUtils.totalSteps(binaryMap)
+
+    def callback_gen(ga_instance):
+      """callback function"""
+      # store current best solution
+      self.graphUtils.storeMap(ga_instance.best_solution()[0])
+      # store path length of current best solution
+      self.graphUtils.storeLength(ga_instance.best_solution()[1])
+
+    # run evolutionary optimization for 100 generations with
+    # population size of 50 individuals
+    optimize(50, 100, self.graphUtils, pathLength, callback = callback_gen)
+    # return index and OSP length of best map
+    return self.graphUtils.bestMap()
+
   def randomConnectivity(self, nRow: int, nCol: int, flagAmount: int = 2, density: float = 0.8):
     """Create random connectivity for current sample"""
+    self.attempt += 1
     mapSize = nRow * nCol
     fullHexa = math.ceil(mapSize * density)
     # define basic map topology
@@ -346,8 +445,9 @@ class dataset():
         randomMap[index] = 3
     mapString = ''.join(map(str, randomMap))
     try:
-      self.graphUtils = graphManager(mapString, nRow, nCol, *list(tellFlagsRowsAndCols(
-        mapString, nRow, nCol, printInfo = False
+      self.graphUtils = graphManager(mapString, nRow, nCol, 
+        *list(tellFlagsRowsAndCols(
+          mapString, nCol, printInfo = False
       ).values()))
     except:
       return 0, 0, 0
@@ -356,26 +456,11 @@ class dataset():
       self.graphUtils.mapDefinition[0]
     ), indices, self.graphUtils.mapDefinition[0]
 
-  def generateMap(self, nRow: int, nCol: int):
-    """Generate random map for current sample"""
-    mapCheck = False
-    # generate random conectivity and make verifications
-    while not mapCheck:
-      connection, spotID, binary = self.randomConnectivity(nRow, nCol)
-      # discard map in case of initial string problem
-      if connection == 0:
-        break
-      # discard map in case of disconnection
-      if self.graphUtils.totalSteps(binary) == 0:
-        break
-      # discard map in case of spot adjacency
-      for (reference, neighbor) in itertools.permutations(spotID, r = 2):
-        if neighbor in connection[reference]:
-          break
-      else:
-        mapCheck = True
-    try:
-      # return graph representation of map
-      return nx.from_dict_of_lists(connection)
-    except: # discard map in case of isolated hexagon
-      return self.generateMap(nRow, nCol)
+  def saveDataPoint(self, sampleIndex: int, optMapIndex: int, ospLength: int):
+    """Store sample in dataset"""
+    # store concise encoding of initial map string
+    self.initialDS[sampleIndex] = self.conciseMapEncoding(0)
+    # store concise encoding of optimal map string
+    self.optimalDS[sampleIndex] = self.conciseMapEncoding(optMapIndex)
+    # store length of OSP
+    self.ospDS[sampleIndex] = ospLength

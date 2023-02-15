@@ -4,7 +4,7 @@ from pathlib import WindowsPath
 import utilities
 #%%
 # initialize dataset object
-sampleNum = 200
+sampleNum = 3
 ds = utilities.dataset(
   filePath = WindowsPath("C:/Users/kaoid/Desktop/HexTDdataset"),
   amountOfSamples = sampleNum, nRow = 10, nCol = 10

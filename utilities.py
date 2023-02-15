@@ -339,9 +339,13 @@ class dataset():
         'w'
       )
       # dataset to store initial map string
-      self.initialDS = self.fileID.create_dataset("initial_string", (amountOfSamples,))
+      self.initialDS = self.fileID.create_dataset(
+        "initial_string", (amountOfSamples,), dtype = h5py.string_dtype(length = self.nRow * self.nCol)
+      )
       # dataset to store optimal map string
-      self.optimalDS = self.fileID.create_dataset("optimal_string", (amountOfSamples,))
+      self.optimalDS = self.fileID.create_dataset(
+        "optimal_string", (amountOfSamples,), dtype = h5py.string_dtype(length = self.nRow * self.nCol)
+      )
       # dataset to store length of optimal shortest path (OSP)
       self.ospDS = self.fileID.create_dataset("OSP_length", (amountOfSamples,), dtype = 'int')
   

@@ -1,3 +1,4 @@
+from pathlib import WindowsPath
 from hexalattice.hexalattice import *
 import h5py
 import random
@@ -306,12 +307,15 @@ def pairwise(iterable):
   next(b, None)
   return zip(a, b)
 
-def tellFlagsRowsAndCols(initialMapString: str, nCol: int, printInfo = True):
+def listToStr(l: list):
+  return ''.join(map(str, l))
+
+def flagsRowsAndCols(initialMapString: str, nCol: int, printInfo = True):
   """Print rows and columns of flags"""
   flagPos = {"row": [], "col": []}
   for (index, code) in enumerate(initialMapString):
     if int(code) == 3:
-      row = int(math.ceil((index + 0.1)/nCol))
+      row = int(math.ceil((index + 0.1) / nCol))
       flagPos["row"].append(row - 1)
       flagPos["col"].append(index - (row - 1) * nCol)
   if printInfo:
@@ -326,7 +330,7 @@ class dataset():
   
   """Utilities for dataset generation and processing"""
   
-  def __init__(self, filePath = "", amountOfSamples: int = 0, nRow: int = 0, nCol: int = 0):
+  def __init__(self, amountOfSamples: int = 0, nRow: int = 0, nCol: int = 0):
     self.nRow = nRow # number of rows in maps
     self.nCol = nCol # number of cols in maps
     self.graphUtils = 0
@@ -335,7 +339,9 @@ class dataset():
       self.nSample = amountOfSamples # number of samples to be generated
       # create hdf5 file to store data
       self.fileID = h5py.File(
-        str(filePath) + "/" + str(random.randint(1, 10000)) + "_" + str(amountOfSamples) + ".hdf5",
+        f"""{str(WindowsPath("C:/Users/kaoid/Desktop/HexTDdataset"))}\{str(
+          random.randint(0, 9000)
+        )}_{str(self.nRow)}r{str(self.nCol)}c{str(amountOfSamples)}.hdf5""",
         'w'
       )
       # dataset to store initial map string
@@ -362,7 +368,66 @@ class dataset():
           self.graphUtils.mapDefinition[mapIndex][spotID] = 3 + pos
         elif spotClass == "base":
           self.graphUtils.mapDefinition[mapIndex][spotID] = 3 + len(self.graphUtils.spot["flag"])
-    return ''.join(map(str, self.graphUtils.mapDefinition[mapIndex]))
+    return listToStr(self.graphUtils.mapDefinition[mapIndex])
+
+  def decodeMapString(self, encodedMapString: list) -> list:
+    """
+    Decode map string from HDF5 file back to graphManager format.
+    Also returns 'spot' dictionary.
+    """
+    spot = {"spawn": [], "flag": [], "base": []}
+    flagDict = {}
+    intMap = list(map(int, encodedMapString))
+    maxCode = max(intMap)
+    for (hexID, code) in enumerate(intMap):
+      if code == 2: # spawn
+        spot["spawn"].append(hexID)
+      elif code == maxCode: # player's base
+        encodedMapString[hexID] = "4"
+        spot["base"].append(hexID)
+      elif code != 0 and code != 1: # flags
+        encodedMapString[hexID] = "3"
+        flagDict[code] = hexID
+    flagKey = list(flagDict.keys())
+    flagKey.sort()
+    spot["flag"] = [flagDict[i] for i in flagKey]
+    return spot
+
+  def readHDF5file(self, hdf5Name):
+    """
+    From hdf5 file, retrieve initial and optimal map definitions as used by
+    graphManager objects, OSP lengths, flag rows and columns, and map dimensions
+    """
+    # read data from file
+    filePath = str(WindowsPath("C:/Users/kaoid/Desktop/HexTDdataset")) + "\\" + hdf5Name + ".hdf5"
+    with h5py.File(filePath, 'r') as f:
+      osp = f['OSP_length']
+      initStr = list(map(list, list(f['initial_string'].asstr())))
+      optStr = list(map(list, list(f['optimal_string'].asstr())))
+    # get number of rows and columns in map
+    underscoreIndex = hdf5Name.find("_")
+    rIndex = hdf5Name.find("r")
+    cIndex = hdf5Name.find("c")
+    numRow = int(hdf5Name[underscoreIndex + 1 : rIndex])
+    numCol = int(hdf5Name[rIndex + 1 : cIndex])
+    basicInitStr, basicOptimalStr, flagRow, flagCol = [], [], [], []
+    # iterate in samples
+    for (initialSampleStr, optimalSampleStr) in zip(initStr, optStr):
+      # get initial map string in basic format
+      sampleSpot = self.decodeMapString(initialSampleStr)
+      basicInitStr.append(listToStr(initialSampleStr))
+      # get optimal map string in basic format
+      self.decodeMapString(optimalSampleStr)
+      basicOptimalStr.append(listToStr(optimalSampleStr))
+      # get sorted positions of flags
+      sampleFlagRow, sampleFlagCol = [], []
+      for flagID in sampleSpot["flag"]:
+        row = int(math.ceil((flagID + 0.1) / numCol))
+        sampleFlagRow.append(row - 1)
+        sampleFlagCol.append(flagID - (row - 1) * numCol)
+      flagRow.append(sampleFlagRow)
+      flagCol.append(sampleFlagCol)
+    return basicInitStr, basicOptimalStr, numRow, numCol, flagRow, flagCol
 
   def generateDataset(self):
     """Generate dataset with requested amount of samples"""
@@ -447,10 +512,10 @@ class dataset():
         randomMap[index] = 4
       else: # intermediary indices recieve flags
         randomMap[index] = 3
-    mapString = ''.join(map(str, randomMap))
+    mapString = listToStr(randomMap)
     try:
       self.graphUtils = graphManager(mapString, nRow, nCol, 
-        *list(tellFlagsRowsAndCols(
+        *list(flagsRowsAndCols(
           mapString, nCol, printInfo = False
       ).values()))
     except:

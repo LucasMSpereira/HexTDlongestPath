@@ -3,6 +3,7 @@ from hexalattice.hexalattice import *
 import h5py
 import random
 import pygad
+import statistics
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -393,42 +394,6 @@ class dataset():
     spot["flag"] = [flagDict[i] for i in flagKey]
     return spot
 
-  def readHDF5file(self, hdf5Name):
-    """
-    From hdf5 file, retrieve initial and optimal map definitions as used by
-    graphManager objects, OSP lengths, flag rows and columns, and map dimensions
-    """
-    # read data from file
-    filePath = str(WindowsPath("C:/Users/kaoid/Desktop/HexTDdataset")) + "\\" + hdf5Name + ".hdf5"
-    with h5py.File(filePath, 'r') as f:
-      osp = f['OSP_length']
-      initStr = list(map(list, list(f['initial_string'].asstr())))
-      optStr = list(map(list, list(f['optimal_string'].asstr())))
-    # get number of rows and columns in map
-    underscoreIndex = hdf5Name.find("_")
-    rIndex = hdf5Name.find("r")
-    cIndex = hdf5Name.find("c")
-    numRow = int(hdf5Name[underscoreIndex + 1 : rIndex])
-    numCol = int(hdf5Name[rIndex + 1 : cIndex])
-    basicInitStr, basicOptimalStr, flagRow, flagCol = [], [], [], []
-    # iterate in samples
-    for (initialSampleStr, optimalSampleStr) in zip(initStr, optStr):
-      # get initial map string in basic format
-      sampleSpot = self.decodeMapString(initialSampleStr)
-      basicInitStr.append(listToStr(initialSampleStr))
-      # get optimal map string in basic format
-      self.decodeMapString(optimalSampleStr)
-      basicOptimalStr.append(listToStr(optimalSampleStr))
-      # get sorted positions of flags
-      sampleFlagRow, sampleFlagCol = [], []
-      for flagID in sampleSpot["flag"]:
-        row = int(math.ceil((flagID + 0.1) / numCol))
-        sampleFlagRow.append(row - 1)
-        sampleFlagCol.append(flagID - (row - 1) * numCol)
-      flagRow.append(sampleFlagRow)
-      flagCol.append(sampleFlagCol)
-    return basicInitStr, basicOptimalStr, numRow, numCol, flagRow, flagCol
-
   def generateDataset(self):
     """Generate dataset with requested amount of samples"""
     for sample in range(self.nSample):
@@ -494,6 +459,42 @@ class dataset():
     # return index and OSP length of best map
     return self.graphUtils.bestMap()
 
+  def readHDF5file(self, hdf5Name):
+    """
+    From hdf5 file, retrieve initial and optimal map definitions as used by
+    graphManager objects, OSP lengths, flag rows and columns, and map dimensions
+    """
+    # read data from file
+    filePath = str(WindowsPath("C:/Users/kaoid/Desktop/HexTDdataset")) + "\\" + hdf5Name
+    with h5py.File(filePath, 'r') as f:
+      osp = list(f['OSP_length'])
+      initStr = list(map(list, list(f['initial_string'].asstr())))
+      optStr = list(map(list, list(f['optimal_string'].asstr())))
+    # get number of rows and columns in map
+    underscoreIndex = hdf5Name.find("_")
+    rIndex = hdf5Name.find("r")
+    cIndex = hdf5Name.find("c")
+    numRow = int(hdf5Name[underscoreIndex + 1 : rIndex])
+    numCol = int(hdf5Name[rIndex + 1 : cIndex])
+    basicInitStr, basicOptimalStr, flagRow, flagCol = [], [], [], []
+    # iterate in samples
+    for (initialSampleStr, optimalSampleStr) in zip(initStr, optStr):
+      # get initial map string in basic format
+      sampleSpot = self.decodeMapString(initialSampleStr)
+      basicInitStr.append(listToStr(initialSampleStr))
+      # get optimal map string in basic format
+      self.decodeMapString(optimalSampleStr)
+      basicOptimalStr.append(listToStr(optimalSampleStr))
+      # get sorted positions of flags
+      sampleFlagRow, sampleFlagCol = [], []
+      for flagID in sampleSpot["flag"]:
+        row = int(math.ceil((flagID + 0.1) / numCol))
+        sampleFlagRow.append(row - 1)
+        sampleFlagCol.append(flagID - (row - 1) * numCol)
+      flagRow.append(sampleFlagRow)
+      flagCol.append(sampleFlagCol)
+    return basicInitStr, basicOptimalStr, numRow, numCol, flagRow, flagCol, osp
+
   def randomConnectivity(self, nRow: int, nCol: int, flagAmount: int = 2, density: float = 0.8):
     """Create random connectivity for current sample"""
     self.attempt += 1
@@ -533,3 +534,51 @@ class dataset():
     self.optimalDS[sampleIndex] = self.conciseMapEncoding(optMapIndex)
     # store length of OSP
     self.ospDS[sampleIndex] = ospLength
+
+  def studyHDF5file(self, hdf5Name):
+    """
+    Check HDF5 data file for problems
+    """
+    # read data from file
+    filePath = str(WindowsPath("C:/Users/kaoid/Desktop/HexTDdataset")) + "\\" + hdf5Name
+    with h5py.File(filePath, 'r') as f:
+      osp = list(f['OSP_length'])
+      initStr = list(map(list, list(f['initial_string'].asstr())))
+      optStr = list(map(list, list(f['optimal_string'].asstr())))
+    # get number of rows and columns in map
+    underscoreIndex = hdf5Name.find("_")
+    rIndex = hdf5Name.find("r")
+    cIndex = hdf5Name.find("c")
+    numCol = int(hdf5Name[rIndex + 1 : cIndex])
+    quart = statistics.quantiles(osp)
+    print(f"""OSP lengths:
+      Minimum: {min(osp)}
+      First quartile: {quart[0]}
+      Second quartile: {quart[1]}
+      Third quartile: {quart[2]}
+      Maximum: {max(osp)}
+      Mean: {statistics.mean(osp):.3E}
+      Standard deviation: {statistics.stdev(osp):.3E}
+    """)
+    basicInitStr, basicOptimalStr, flagRow, flagCol = [], [], [], []
+    # iterate in samples
+    for (sample, (initialSampleStr, optimalSampleStr)) in enumerate(zip(initStr, optStr)):
+      # get initial map string in basic format
+      if len(listToStr(initialSampleStr)) * len(listToStr(optimalSampleStr)) == 0:
+          raise Exception(f"Sample {sample} in \"{hdf5Name}\".hdf5 has empty map definition.")
+      sampleSpot = self.decodeMapString(initialSampleStr)
+      for pos in sampleSpot.values():
+        if len(pos) == 0:
+          raise Exception(f"Sample {sample} in \"{hdf5Name}\".hdf5 has problematic 'spot' dict.")
+      basicInitStr.append(listToStr(initialSampleStr))
+      # get optimal map string in basic format
+      self.decodeMapString(optimalSampleStr)
+      basicOptimalStr.append(listToStr(optimalSampleStr))
+      # get sorted positions of flags
+      flagList = []
+      for flagID in sampleSpot["flag"]:
+        row = int(math.ceil((flagID + 0.1) / numCol))
+        flagList.append(row - 1)
+        flagList.append(flagID - (row - 1) * numCol)
+      if len(flagList) == 0:
+        raise Exception(f"Sample {sample} in \"{hdf5Name}\".hdf5 has problematic flag positioning.")

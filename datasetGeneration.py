@@ -41,10 +41,5 @@ if sampleNum == 0:
       optMapObj.plotMesh(0)
       print(optMapObj.bestMap()[1])
       print(osp[sample])
-    # if hdf5File.name not in [
-    #   "7321_10r10c1000.hdf5", # generating
-    #   "2568_10r10c1000.hdf5", # unable to open
-    #   "2195_10r10c1000.hdf5", # generating
-    # ]:
-    # look for problems in dataset files
+    # look for problems in dataset file
     ds.studyHDF5file(hdf5File.name)

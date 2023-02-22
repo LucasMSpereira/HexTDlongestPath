@@ -27,7 +27,7 @@ if sampleNum == 0:
     # print maps of a few samples from current file
     print(index + 1, hdf5File.name)
     init, opt, nRow, nCol, flagRow, flagCol, osp = ds.readHDF5file(hdf5File.name)
-    for sample in random.sample(range(1000), k = 5):
+    for sample in random.sample(range(1000), k = 1):
       initMapObj = utilities.graphManager(
         init[sample], nRow, nCol,
         flagRow[sample], flagCol[sample]

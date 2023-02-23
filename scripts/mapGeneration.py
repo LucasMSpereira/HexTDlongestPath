@@ -1,4 +1,6 @@
 #%%
+# Script used to generate first maps
+
 import time
 import datetime
 import utilities

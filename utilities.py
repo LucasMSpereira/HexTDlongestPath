@@ -551,7 +551,7 @@ class dataset():
     cIndex = hdf5Name.find("c")
     numCol = int(hdf5Name[rIndex + 1 : cIndex])
     quart = statistics.quantiles(osp)
-    print(f"""OSP lengths:
+    print(f"""OSP lengths ({len(osp)} total):
       Minimum: {min(osp)}
       First quartile: {quart[0]}
       Second quartile: {quart[1]}

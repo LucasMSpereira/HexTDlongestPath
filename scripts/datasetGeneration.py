@@ -1,8 +1,13 @@
 #%%
+# Script used to generate dataset HDF5 files and analyse them
+
 import time
 import random
-from pathlib import WindowsPath
 import utilities
+from pathlib import WindowsPath
+# from importlib.machinery import SourceFileLoader
+# utilities = SourceFileLoader("utilities", str(WindowsPath(".\\utilities.py"))).load_module()
+# import utilities
 #%%
 # initialize dataset object
 sampleNum = 0
@@ -24,7 +29,7 @@ if sampleNum != 0:
 #%%
 if sampleNum == 0:
   for (index, hdf5File) in enumerate(WindowsPath("C:/Users/kaoid/Desktop/HexTDdataset").iterdir()):
-    # print maps of a few samples from current file
+    # print maps of k sample(s) from current file
     print(index + 1, hdf5File.name)
     init, opt, nRow, nCol, flagRow, flagCol, osp = ds.readHDF5file(hdf5File.name)
     for sample in random.sample(range(1000), k = 1):

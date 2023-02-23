@@ -1,4 +1,6 @@
 #%%
+# Script used to study statistics of map optimization performance
+
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy

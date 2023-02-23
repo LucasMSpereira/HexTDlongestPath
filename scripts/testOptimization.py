@@ -1,4 +1,6 @@
 #%%
+# Script used to test map optimization parameters
+
 import time
 import pygad
 import datetime

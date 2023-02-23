@@ -546,7 +546,6 @@ class dataset():
       initStr = list(map(list, list(f['initial_string'].asstr())))
       optStr = list(map(list, list(f['optimal_string'].asstr())))
     # get number of rows and columns in map
-    underscoreIndex = hdf5Name.find("_")
     rIndex = hdf5Name.find("r")
     cIndex = hdf5Name.find("c")
     numCol = int(hdf5Name[rIndex + 1 : cIndex])
@@ -560,7 +559,7 @@ class dataset():
       Mean: {statistics.mean(osp):.3E}
       Standard deviation: {statistics.stdev(osp):.3E}
     """)
-    basicInitStr, basicOptimalStr, flagRow, flagCol = [], [], [], []
+    basicInitStr, basicOptimalStr = [], []
     # iterate in samples
     for (sample, (initialSampleStr, optimalSampleStr)) in enumerate(zip(initStr, optStr)):
       # get initial map string in basic format

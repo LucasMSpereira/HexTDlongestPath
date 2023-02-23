@@ -2,7 +2,9 @@ import datetime
 import utilities
 import pygad
 
-### test optimization ###
+
+###  test map creation and optimization  ###
+
 
 mapRows = 10
 mapCols = 10
@@ -66,3 +68,5 @@ initial = sample.totalSteps(sample.mapDefinition[0])
 sample.storeMap(ga_instance.best_solution()[0])
 # store path length of current best solution
 sample.storeLength(ga_instance.best_solution()[1])
+# specific optimization function
+utilities.optimize(20, 10, sample, pathLength)

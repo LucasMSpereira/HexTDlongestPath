@@ -1,5 +1,5 @@
 #%%
-# Script used to generate first maps
+# Script used to generate and optimize first maps
 
 import time
 import datetime

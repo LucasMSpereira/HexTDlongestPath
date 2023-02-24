@@ -340,7 +340,7 @@ class dataset():
       self.nSample = amountOfSamples # number of samples to be generated
       # create hdf5 file to store data
       self.fileID = h5py.File(
-        f"""{str(WindowsPath("C:/Users/kaoid/Desktop/HexTDdataset"))}\{str(
+        f"""{str(WindowsPath("C:/Users/kaoid/Desktop/HexTDdataset"))}\\{str(
           random.randint(0, 9000)
         )}_{str(self.nRow)}r{str(self.nCol)}c{str(amountOfSamples)}.hdf5""",
         'w'

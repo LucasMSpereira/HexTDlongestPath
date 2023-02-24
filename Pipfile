@@ -11,6 +11,7 @@ pygad = "*"
 scipy = "*"
 matplotlib = "*"
 h5py = "*"
+pytest = "*"
 
 [dev-packages]
 ipykernel = "*"

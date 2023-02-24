@@ -27,13 +27,6 @@ def pathLength(binaryMap: list, solution_idx) -> int:
 
 def callback_gen(ga_instance):
   """callback function"""
-  print(f"""
-  Gen: {
-    ga_instance.generations_completed
-  } Longest path: {
-    ga_instance.best_solution()[1]
-  } Time: {datetime.datetime.now().strftime("%H:%M:%S")}
-  """)
   # store current best solution
   sample.storeMap(ga_instance.best_solution()[0])
   # store path length of current best solution
@@ -41,22 +34,21 @@ def callback_gen(ga_instance):
 
 populationSize = 20
 ga_instance = pygad.GA(
-  fitness_func = pathLength,
-  # on_generation = callback_gen,
-  num_generations = 10,
-  sol_per_pop = populationSize,
-  num_parents_mating = round(0.1 * populationSize) if populationSize > 10 else 1,
-  keep_elitism = 0,
-  num_genes = sample.nRow * sample.nCol,
-  gene_space = [0, 1],
-  parent_selection_type = "rank",
-  crossover_type = "single_point",
-  mutation_type = "random",
-  mutation_percent_genes = 10,
-  suppress_warnings = True,
-  save_solutions = True,
-  parallel_processing = 8
-)
+    fitness_func = pathLength,
+    num_generations = 10,
+    callback_generation = callback_gen,
+    sol_per_pop = populationSize,
+    num_parents_mating = round(0.2 * populationSize),
+    keep_elitism = 0,
+    num_genes = sample.nRow * sample.nCol,
+    gene_space = [0, 1],
+    parent_selection_type = "rank",
+    crossover_type = "single_point",
+    mutation_type = "random",
+    mutation_percent_genes = 10,
+    suppress_warnings = True,
+    save_solutions = True
+  )
 
 ga_instance.run() # run optimization
 def testNumberOfMaps():

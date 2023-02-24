@@ -67,14 +67,17 @@ class graphManager():
 
   def bestMap(self):
     """
-    Return number of steps of shortest path in
-    best map, and its index
+    Return index of best map and number of
+    steps of shortest path
     """
     # lengths of shortest path in each map
     totalLength = list(map(self.totalSteps, self.mapDefinition))
     # size of longest path
-    longest = max(totalLength)
-    return longest, totalLength.index(longest)
+    longest = (0, 0)
+    for length in enumerate(totalLength):
+      if length[1] > longest[1]:
+        longest = length
+    return longest
 
   def binaryToGraph(self, binaryDefinition: list):
     """
@@ -222,7 +225,7 @@ class graphManager():
 
   def storeMap(self, mapDef: list):
     """Store binary representation of map"""
-    self.mapDefinition.append(mapDef)
+    self.mapDefinition.append(list(map(int, mapDef)))
 
   def stringToBinary(self, mapString: str):
     """

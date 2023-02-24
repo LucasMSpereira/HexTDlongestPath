@@ -1,3 +1,4 @@
+print("0")
 import datetime
 import utilities
 import pygad

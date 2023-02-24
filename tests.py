@@ -59,11 +59,13 @@ ga_instance = pygad.GA(
 )
 
 ga_instance.run() # run optimization
-assert len(sample.mapDefinition) == 11
+def testNumberOfMaps():
+  assert len(sample.mapDefinition) == 11
 
 # index and number of steps needed in best map
 best = sample.bestMap()
 
 # number of steps needed in initial map
 initial = sample.totalSteps(sample.mapDefinition[0])
-assert best[1] >= initial
+def testPathLengths():
+  assert best[1] >= initial

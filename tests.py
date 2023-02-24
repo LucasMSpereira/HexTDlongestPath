@@ -1,4 +1,3 @@
-import datetime
 import utilities
 import pygad
 

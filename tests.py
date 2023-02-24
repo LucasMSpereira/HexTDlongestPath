@@ -1,11 +1,9 @@
-print("0")
 import datetime
 import utilities
 import pygad
 
 ### test optimization ###
 
-print("1")
 mapRows = 10
 mapCols = 10
 sample = utilities.graphManager(
@@ -15,7 +13,7 @@ sample = utilities.graphManager(
   [0, 9], # rows of each flag
   [9, 0] # columns of each flag
 )
-print("2")
+
 def pathLength(binaryMap: list, solution_idx) -> int:
   """
   Objective to be maximized. Receives binary list
@@ -59,23 +57,13 @@ ga_instance = pygad.GA(
   save_solutions = True,
   parallel_processing = 8
 )
-print("3")
 
 ga_instance.run() # run optimization
-print("4")
+assert len(sample.mapDefinition) == 11
 
 # index and number of steps needed in best map
 best = sample.bestMap()
-print("5")
 
 # number of steps needed in initial map
 initial = sample.totalSteps(sample.mapDefinition[0])
-print("6")
-
-# store current best solution
-sample.storeMap(ga_instance.best_solution()[0])
-print("7")
-
-# store path length of current best solution
-sample.storeLength(ga_instance.best_solution()[1])
-print("8")
+assert best[1] >= initial

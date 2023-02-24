@@ -2,7 +2,9 @@ import datetime
 import utilities
 import pygad
 
-### test optimization ###
+
+###  test map creation and optimization  ###
+
 
 mapRows = 10
 mapCols = 10

@@ -1,5 +1,9 @@
+from pathlib import WindowsPath
 from hexalattice.hexalattice import *
+import h5py
+import random
 import pygad
+import statistics
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -15,7 +19,7 @@ class graphManager():
   def __init__(
     self, initialMapString: str,
     numRow: int, numCol: int,
-    rowsOfFlags: list, colsOfFlags: int
+    rowsOfFlags: list, colsOfFlags: list
   ):
     # dictionary to store spots (spawn-flag-base)
     self.spot = {"spawn": [], "flag": [], "base": []}
@@ -79,10 +83,8 @@ class graphManager():
         longest = length
     return longest
 
-  def binaryToGraph(self, binaryDefinition: list):
-    """
-    Get adjacency graph from binary map representation
-    """
+  def binaryToConnections(self, binaryDefinition: list):
+    """Hexagon connectivity from binary map definition"""
     # each key x refers to hexagon with ID x.
     # Starts from 0 and goes left to right, top to bottom.
     # respective values in dict contain the IDs of
@@ -151,8 +153,14 @@ class graphManager():
       for neighbor in reversed(range(len(connectivity[hexa]))):
         if connectivity[hexa][neighbor] == -1:
           connectivity[hexa].pop(neighbor)
-    # return graph
-    return nx.from_dict_of_lists(connectivity)
+    
+    return connectivity
+
+  def binaryToGraph(self, binaryDefinition: list):
+    """
+    Get adjacency graph from binary map representation
+    """
+    return nx.from_dict_of_lists(self.binaryToConnections(binaryDefinition))
   
   def mapCheck(self, mapDefinition: list):
     """
@@ -177,9 +185,7 @@ class graphManager():
     """Plot hexagon lattice"""
     mapSize = len(self.mapDefinition[mapID])
     # initial full map with shades of grey
-    colors = np.zeros([mapSize, 3]) + np.array([np.fromiter(
-      itertools.repeat(np.random.rand(), times = 3), float
-    ) for _ in range(mapSize)]) * 0.3
+    colors = np.zeros([mapSize, 3]) + np.array([np.fromiter(itertools.repeat(np.random.rand(), times = 3), float) for _ in range(mapSize)]) * 0.3
     step = -1
     totalPath = []
     spotSection = self.allPaths(self.binaryToGraph(self.mapDefinition[mapID]))
@@ -198,13 +204,13 @@ class graphManager():
         colors[hexa, :] = 1
     # shortest path in shades of green
     for (stepID, hexa) in enumerate(totalPath):
-      colors[hexa, :] = [0, 1 - 0.75 * stepID / len(totalPath), 0]
+      colors[hexa, :] = [0, 1 - 0.45 * np.random.rand(), 0]
     # spawn in red
     for spawn in self.spot["spawn"]:
       colors[spawn, :] = [0.8, 0, 0]
     # flags in orange
-    for flag in self.spot["flag"]:
-      colors[flag, :] = [255/255, 128/255, 0]
+    for (flagNum, hexa) in enumerate(self.spot["flag"]):
+      colors[hexa, :] = list(map(lambda x: x * (1 - 0.5 * flagNum / len(self.spot["flag"])), [1, 128 / 255, 0]))
     # base in blue
     colors[self.spot["base"], :] = [0, 0, 0.8]
     
@@ -273,12 +279,13 @@ class graphManager():
 
 def optimize(
   population: int, generations: int, sampleObject,
-  _pathLength
+  _pathLength, callback = None
 ) -> int:
   """Run EA for given population size and number of generations"""
   ga_instance = pygad.GA(
     fitness_func = _pathLength,
     num_generations = generations,
+    callback_generation = callback,
     sol_per_pop = population,
     num_parents_mating = round(0.2 * population) if population > 10 else 1,
     keep_elitism = 0,
@@ -301,14 +308,276 @@ def pairwise(iterable):
   next(b, None)
   return zip(a, b)
 
-def tellFlagsRowsAndCols(initialMapString: str, nRow: int, nCol: int):
+def listToStr(l: list):
+  return ''.join(map(str, l))
+
+def flagsRowsAndCols(initialMapString: str, nCol: int, printInfo = True):
+  """Print rows and columns of flags"""
   flagPos = {"row": [], "col": []}
   for (index, code) in enumerate(initialMapString):
     if int(code) == 3:
-      row = int(math.ceil((index + 0.1)/nCol))
+      row = int(math.ceil((index + 0.1) / nCol))
       flagPos["row"].append(row - 1)
       flagPos["col"].append(index - (row - 1) * nCol)
-  for (flagNum, _) in enumerate(flagPos["row"]):
-    print(f"""
-    Flag in row {flagPos["row"][flagNum]} column {flagPos["col"][flagNum]}
+  if printInfo:
+    for (flagNum, _) in enumerate(flagPos["row"]):
+      print(f"""
+      Flag in row {flagPos["row"][flagNum]} column {flagPos["col"][flagNum]}
+      """)
+  else:
+    return flagPos
+
+class dataset():
+  
+  """Utilities for dataset generation and processing"""
+  
+  def __init__(self, amountOfSamples: int = 0, nRow: int = 0, nCol: int = 0):
+    self.nRow = nRow # number of rows in maps
+    self.nCol = nCol # number of cols in maps
+    self.graphUtils = 0
+    self.attempt = 0
+    if amountOfSamples != 0:
+      self.nSample = amountOfSamples # number of samples to be generated
+      # create hdf5 file to store data
+      self.fileID = h5py.File(
+        f"""{str(WindowsPath("C:/Users/kaoid/Desktop/HexTDdataset"))}\\{str(
+          random.randint(0, 9000)
+        )}_{str(self.nRow)}r{str(self.nCol)}c{str(amountOfSamples)}.hdf5""",
+        'w'
+      )
+      # dataset to store initial map string
+      self.initialDS = self.fileID.create_dataset(
+        "initial_string", (amountOfSamples,), dtype = h5py.string_dtype(length = self.nRow * self.nCol)
+      )
+      # dataset to store optimal map string
+      self.optimalDS = self.fileID.create_dataset(
+        "optimal_string", (amountOfSamples,), dtype = h5py.string_dtype(length = self.nRow * self.nCol)
+      )
+      # dataset to store length of optimal shortest path (OSP)
+      self.ospDS = self.fileID.create_dataset("OSP_length", (amountOfSamples,), dtype = 'int')
+  
+  def conciseMapEncoding(self, mapIndex: int) -> str:
+    """
+    Alternative map representation that encodes
+    map topology (0s and 1s) and spots (spawn-flags-base)
+    """
+    for spotClass in self.graphUtils.spot.keys():
+      for (pos, spotID) in enumerate(self.graphUtils.spot[spotClass]):
+        if spotClass == "spawn":
+          self.graphUtils.mapDefinition[mapIndex][spotID] = 2
+        elif spotClass == "flag":
+          self.graphUtils.mapDefinition[mapIndex][spotID] = 3 + pos
+        elif spotClass == "base":
+          self.graphUtils.mapDefinition[mapIndex][spotID] = 3 + len(self.graphUtils.spot["flag"])
+    return listToStr(self.graphUtils.mapDefinition[mapIndex])
+
+  def decodeMapString(self, encodedMapString: list) -> list:
+    """
+    Decode map string from HDF5 file back to graphManager format.
+    Also returns 'spot' dictionary.
+    """
+    spot = {"spawn": [], "flag": [], "base": []}
+    flagDict = {}
+    intMap = list(map(int, encodedMapString))
+    maxCode = max(intMap)
+    for (hexID, code) in enumerate(intMap):
+      if code == 2: # spawn
+        spot["spawn"].append(hexID)
+      elif code == maxCode: # player's base
+        encodedMapString[hexID] = "4"
+        spot["base"].append(hexID)
+      elif code != 0 and code != 1: # flags
+        encodedMapString[hexID] = "3"
+        flagDict[code] = hexID
+    flagKey = list(flagDict.keys())
+    flagKey.sort()
+    spot["flag"] = [flagDict[i] for i in flagKey]
+    return spot
+
+  def generateDataset(self):
+    """Generate dataset with requested amount of samples"""
+    for sample in range(self.nSample):
+      OSPlength = 0
+      while OSPlength == 0: # filter problematic OSP
+        print(f"Generating sample {sample + 1}")
+        self.generateMap() # create random map
+        # index and OSP length of optimal map
+        optimalMapIndex, OSPlength = self.optimizeSample()
+      self.saveDataPoint(sample, optimalMapIndex, OSPlength)
+    self.fileID.close()
+
+  def generateMap(self):
+      """Generate random map for current sample"""
+      mapCheck = False
+      # generate random conectivity and make verifications
+      while not mapCheck:
+        connection, spotID, binary = self.randomConnectivity(self.nRow, self.nCol)
+        # discard map in case of initial string problem
+        if connection == 0:
+          break
+        # discard map in case of disconnection
+        if self.graphUtils.totalSteps(binary) == 0:
+          break
+        # discard map in case of spot adjacency
+        for (reference, neighbor) in itertools.permutations(spotID, r = 2):
+          if neighbor in connection[reference]:
+            break
+        else:
+          mapCheck = True
+      try:
+        # attempt to create graph representation of map
+        nx.from_dict_of_lists(connection)
+      except: # discard map in case of isolated hexagon
+        return self.generateMap()
+
+  def optimizeSample(self):
+    """
+    Optimize map of current sample. Return index of
+    this sample's optimal map, and OSP length
+    """
+    def pathLength(binaryMap: list, solution_idx) -> int:
+      """
+      Objective to be maximized. Receives binary list
+      indicating hexagons that are absent (0) or
+      present (1). Returns length of shortest path
+      """
+      # guarantee a few basic map properties
+      binaryMap = self.graphUtils.mapCheck(binaryMap)
+      # return total size of path (or zero in case of disconnection)
+      return self.graphUtils.totalSteps(binaryMap)
+
+    def callback_gen(ga_instance):
+      """callback function"""
+      # store current best solution
+      self.graphUtils.storeMap(ga_instance.best_solution()[0])
+      # store path length of current best solution
+      self.graphUtils.storeLength(ga_instance.best_solution()[1])
+
+    # run evolutionary optimization for 100 generations with
+    # population size of 50 individuals
+    optimize(50, 100, self.graphUtils, pathLength, callback = callback_gen)
+    # return index and OSP length of best map
+    return self.graphUtils.bestMap()
+
+  def readHDF5file(self, hdf5Name):
+    """
+    From hdf5 file, retrieve initial and optimal map definitions as used by
+    graphManager objects, OSP lengths, flag rows and columns, and map dimensions
+    """
+    # read data from file
+    filePath = str(WindowsPath("C:/Users/kaoid/Desktop/HexTDdataset")) + "\\" + hdf5Name
+    with h5py.File(filePath, 'r') as f:
+      osp = list(f['OSP_length'])
+      initStr = list(map(list, list(f['initial_string'].asstr())))
+      optStr = list(map(list, list(f['optimal_string'].asstr())))
+    # get number of rows and columns in map
+    underscoreIndex = hdf5Name.find("_")
+    rIndex = hdf5Name.find("r")
+    cIndex = hdf5Name.find("c")
+    numRow = int(hdf5Name[underscoreIndex + 1 : rIndex])
+    numCol = int(hdf5Name[rIndex + 1 : cIndex])
+    basicInitStr, basicOptimalStr, flagRow, flagCol = [], [], [], []
+    # iterate in samples
+    for (initialSampleStr, optimalSampleStr) in zip(initStr, optStr):
+      # get initial map string in basic format
+      sampleSpot = self.decodeMapString(initialSampleStr)
+      basicInitStr.append(listToStr(initialSampleStr))
+      # get optimal map string in basic format
+      self.decodeMapString(optimalSampleStr)
+      basicOptimalStr.append(listToStr(optimalSampleStr))
+      # get sorted positions of flags
+      sampleFlagRow, sampleFlagCol = [], []
+      for flagID in sampleSpot["flag"]:
+        row = int(math.ceil((flagID + 0.1) / numCol))
+        sampleFlagRow.append(row - 1)
+        sampleFlagCol.append(flagID - (row - 1) * numCol)
+      flagRow.append(sampleFlagRow)
+      flagCol.append(sampleFlagCol)
+    return basicInitStr, basicOptimalStr, numRow, numCol, flagRow, flagCol, osp
+
+  def randomConnectivity(self, nRow: int, nCol: int, flagAmount: int = 2, density: float = 0.8):
+    """Create random connectivity for current sample"""
+    self.attempt += 1
+    mapSize = nRow * nCol
+    fullHexa = math.ceil(mapSize * density)
+    # define basic map topology
+    randomMap = list(np.ones(fullHexa, dtype = int))
+    randomMap.extend(list(np.zeros(mapSize - fullHexa, dtype = int)))
+    random.shuffle(randomMap)
+    # choose spawn, flag(s) and player's base locations
+    indices = random.sample(range(0, mapSize), k = flagAmount + 2)
+    for (pos, index) in enumerate(indices):
+      if pos == 0: # spawn in first index
+        randomMap[index] = 2
+      elif pos == len(indices) - 1: # player's base in last index
+        randomMap[index] = 4
+      else: # intermediary indices recieve flags
+        randomMap[index] = 3
+    mapString = listToStr(randomMap)
+    try:
+      self.graphUtils = graphManager(mapString, nRow, nCol, 
+        *list(flagsRowsAndCols(
+          mapString, nCol, printInfo = False
+      ).values()))
+    except:
+      return 0, 0, 0
+    # return connectivity for map generated, and indices
+    return self.graphUtils.binaryToConnections(
+      self.graphUtils.mapDefinition[0]
+    ), indices, self.graphUtils.mapDefinition[0]
+
+  def saveDataPoint(self, sampleIndex: int, optMapIndex: int, ospLength: int):
+    """Store sample in dataset"""
+    # store concise encoding of initial map string
+    self.initialDS[sampleIndex] = self.conciseMapEncoding(0)
+    # store concise encoding of optimal map string
+    self.optimalDS[sampleIndex] = self.conciseMapEncoding(optMapIndex)
+    # store length of OSP
+    self.ospDS[sampleIndex] = ospLength
+
+  def studyHDF5file(self, hdf5Name):
+    """
+    Check HDF5 data file for problems
+    """
+    # read data from file
+    filePath = str(WindowsPath("C:/Users/kaoid/Desktop/HexTDdataset")) + "\\" + hdf5Name
+    with h5py.File(filePath, 'r') as f:
+      osp = list(f['OSP_length'])
+      initStr = list(map(list, list(f['initial_string'].asstr())))
+      optStr = list(map(list, list(f['optimal_string'].asstr())))
+    # get number of rows and columns in map
+    rIndex = hdf5Name.find("r")
+    cIndex = hdf5Name.find("c")
+    numCol = int(hdf5Name[rIndex + 1 : cIndex])
+    quart = statistics.quantiles(osp)
+    print(f"""OSP lengths ({len(osp)} total):
+      Minimum: {min(osp)}
+      First quartile: {quart[0]}
+      Second quartile: {quart[1]}
+      Third quartile: {quart[2]}
+      Maximum: {max(osp)}
+      Mean: {statistics.mean(osp):.3E}
+      Standard deviation: {statistics.stdev(osp):.3E}
     """)
+    basicInitStr, basicOptimalStr = [], []
+    # iterate in samples
+    for (sample, (initialSampleStr, optimalSampleStr)) in enumerate(zip(initStr, optStr)):
+      # get initial map string in basic format
+      if len(listToStr(initialSampleStr)) * len(listToStr(optimalSampleStr)) == 0:
+          raise Exception(f"Sample {sample} in \"{hdf5Name}\".hdf5 has empty map definition.")
+      sampleSpot = self.decodeMapString(initialSampleStr)
+      for pos in sampleSpot.values():
+        if len(pos) == 0:
+          raise Exception(f"Sample {sample} in \"{hdf5Name}\".hdf5 has problematic 'spot' dict.")
+      basicInitStr.append(listToStr(initialSampleStr))
+      # get optimal map string in basic format
+      self.decodeMapString(optimalSampleStr)
+      basicOptimalStr.append(listToStr(optimalSampleStr))
+      # get sorted positions of flags
+      flagList = []
+      for flagID in sampleSpot["flag"]:
+        row = int(math.ceil((flagID + 0.1) / numCol))
+        flagList.append(row - 1)
+        flagList.append(flagID - (row - 1) * numCol)
+      if len(flagList) == 0:
+        raise Exception(f"Sample {sample} in \"{hdf5Name}\".hdf5 has problematic flag positioning.")

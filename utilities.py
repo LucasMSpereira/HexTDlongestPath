@@ -298,7 +298,8 @@ def optimize(
     suppress_warnings = True,
     save_solutions = True
   )
-  ga_instance.run() # run optimization
+  # run optimization
+  ga_instance.run()
   return ga_instance.best_solution()[1]
 
 # available in standard module itertools from version 3.10 onwards

@@ -1,3 +1,5 @@
+# general utilities
+
 from pathlib import WindowsPath
 from hexalattice.hexalattice import *
 import h5py
@@ -465,17 +467,14 @@ class dataManager():
     graphManager objects, OSP lengths, flag rows and columns, and map dimensions
     """
     # read data from file
-    filePath = str(WindowsPath("C:/Users/kaoid/Desktop/HexTDdataset")) + "\\" + hdf5Name
+    filePath = str(WindowsPath(".")) + "\\" + hdf5Name
     with h5py.File(filePath, 'r') as f:
       osp = list(f['OSP_length'])
       initStr = list(map(list, list(f['initial_string'].asstr())))
       optStr = list(map(list, list(f['optimal_string'].asstr())))
     # get number of rows and columns in map
-    underscoreIndex = hdf5Name.find("_")
-    rIndex = hdf5Name.find("r")
-    cIndex = hdf5Name.find("c")
-    numRow = int(hdf5Name[underscoreIndex + 1 : rIndex])
-    numCol = int(hdf5Name[rIndex + 1 : cIndex])
+    numRow = self.nRow
+    numCol = self.nCol
     basicInitStr, basicOptimalStr, flagRow, flagCol = [], [], [], []
     # iterate in samples
     for (initialSampleStr, optimalSampleStr) in zip(initStr, optStr):
@@ -493,7 +492,15 @@ class dataManager():
         sampleFlagCol.append(flagID - (row - 1) * numCol)
       flagRow.append(sampleFlagRow)
       flagCol.append(sampleFlagCol)
-    return basicInitStr, basicOptimalStr, numRow, numCol, flagRow, flagCol, osp
+    return {
+      "basicInitStr": basicInitStr,
+      "basicOptimalStr": basicOptimalStr,
+      "numRow": numRow,
+      "numCol": numCol,
+      "flagRow": flagRow,
+      "flagCol": flagCol,
+      "osp": osp
+    }
 
   def randomConnectivity(self, nRow: int, nCol: int, flagAmount: int = 2, density: float = 0.8):
     """Create random connectivity for current sample"""

@@ -53,7 +53,7 @@ l = list(countOSP.keys())
 l.sort()
 for k in l:
   print(k, countOSP[k])
-ds = utilities.dataset(
+ds = utilities.dataManager(
   amountOfSamples = 0, nRow = 10, nCol = 10
 )
 ds.studyHDF5file("10r10c20000.hdf5")

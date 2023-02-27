@@ -6,7 +6,7 @@ import datetime
 import utilities
 #%%
 # initialize dataset object
-ds = utilities.dataset(
+ds = utilities.dataManager(
   filePath = "path",
   amountOfSamples = 0, nRow = 10, nCol = 10
 )

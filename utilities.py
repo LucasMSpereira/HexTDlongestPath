@@ -327,7 +327,7 @@ def flagsRowsAndCols(initialMapString: str, nCol: int, printInfo = True):
   else:
     return flagPos
 
-class dataset():
+class dataManager():
   
   """Utilities for dataset generation and processing"""
   

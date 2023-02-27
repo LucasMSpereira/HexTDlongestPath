@@ -12,6 +12,7 @@ h5py = "*"
 pytest = "*"
 hexalattice = "*"
 matplotlib-inline = "*"
+tensorflow = "*"
 
 [dev-packages]
 ipykernel = "*"

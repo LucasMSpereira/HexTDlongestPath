@@ -1,5 +1,7 @@
-import tensorflow as tf
+#%%
 import utilities
-
+import random
+#%%
 ds = utilities.dataManager(0, 10, 10)
-d = ds.readHDF5file("dataset.hdf5")
+data = ds.TFdata()
+#%%

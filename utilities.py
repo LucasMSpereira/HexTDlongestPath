@@ -1,5 +1,6 @@
 # general utilities
 
+import copy
 from pathlib import WindowsPath
 from hexalattice.hexalattice import *
 import h5py
@@ -11,6 +12,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import math
 import itertools
+import tensorflow as tf
 
 class graphManager():
   """
@@ -461,10 +463,11 @@ class dataManager():
     # return index and OSP length of best map
     return self.graphUtils.bestMap()
 
-  def readHDF5file(self, hdf5Name):
+  def readHDF5file(self, hdf5Name, decode = True):
     """
     From hdf5 file, retrieve initial and optimal map definitions as used by
-    graphManager objects, OSP lengths, flag rows and columns, and map dimensions
+    graphManager objects, OSP lengths, flag rows and columns, and map dimensions.
+    'decode' kwarg controls if map strings are decoded
     """
     # read data from file
     filePath = str(WindowsPath(".")) + "\\" + hdf5Name
@@ -472,6 +475,9 @@ class dataManager():
       osp = list(f['OSP_length'])
       initStr = list(map(list, list(f['initial_string'].asstr())))
       optStr = list(map(list, list(f['optimal_string'].asstr())))
+    if not decode:
+      encodedInitStr = copy.deepcopy(initStr)
+      encodedOptimalStr = copy.deepcopy(optStr)
     # get number of rows and columns in map
     numRow = self.nRow
     numCol = self.nCol
@@ -493,8 +499,8 @@ class dataManager():
       flagRow.append(sampleFlagRow)
       flagCol.append(sampleFlagCol)
     return {
-      "basicInitStr": basicInitStr,
-      "basicOptimalStr": basicOptimalStr,
+      "initStr": basicInitStr if decode else encodedInitStr,
+      "optimalStr": basicOptimalStr if decode else encodedOptimalStr,
       "numRow": numRow,
       "numCol": numCol,
       "flagRow": flagRow,
@@ -588,3 +594,18 @@ class dataManager():
         flagList.append(flagID - (row - 1) * numCol)
       if len(flagList) == 0:
         raise Exception(f"Sample {sample} in \"{hdf5Name}\".hdf5 has problematic flag positioning.")
+
+  def TFdata(self, fileName = "dataset.hdf5"):
+    """
+    Create tensorflow Dataset object from HDF5 dataset file
+    """
+    dataDict = self.readHDF5file(fileName, decode = False)
+    tfDataset = 0
+    for (index, (initStr, optimalStr, osp)) in enumerate(zip(dataDict["initStr"], dataDict["optimalStr"], dataDict["osp"])):
+      initStr = list(map(int, initStr))
+      optimalStr = list(map(int, optimalStr))
+      if index == 0:
+        tfDataset = tf.data.Dataset.from_tensors((initStr, optimalStr, osp))
+      else:
+        tfDataset = tfDataset.concatenate(tf.data.Dataset.from_tensors((initStr, optimalStr, osp)))
+    return tfDataset

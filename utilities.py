@@ -595,17 +595,21 @@ class dataManager():
       if len(flagList) == 0:
         raise Exception(f"Sample {sample} in \"{hdf5Name}\".hdf5 has problematic flag positioning.")
 
-  def TFdata(self, fileName = "dataset.hdf5"):
+  def TFdata(self, modelOutput, fileName = "dataset.hdf5"):
     """
     Create tensorflow Dataset object from HDF5 dataset file
     """
-    dataDict = self.readHDF5file(fileName, decode = False)
-    tfDataset = 0
-    for (index, (initStr, optimalStr, osp)) in enumerate(zip(dataDict["initStr"], dataDict["optimalStr"], dataDict["osp"])):
-      initStr = list(map(int, initStr))
-      optimalStr = list(map(int, optimalStr))
-      if index == 0:
-        tfDataset = tf.data.Dataset.from_tensors((initStr, optimalStr, osp))
+    fileDict = self.readHDF5file(fileName, decode = False)
+    iStr, oStr, o = [], [], []
+    for (initStr, optimalStr, osp) in zip(fileDict["initStr"], fileDict["optimalStr"], fileDict["osp"]):
+      iStr.append(list(map(int, initStr)))
+      if modelOutput == "optimalPath":
+        oStr.append(list(map(int, optimalStr)))
+      elif modelOutput == "OSPlength":
+        o.append(osp)
       else:
-        tfDataset = tfDataset.concatenate(tf.data.Dataset.from_tensors((initStr, optimalStr, osp)))
-    return tfDataset
+        raise Exception(f"Invalid 'modelOutput' arg to dataManager.TFdata()")
+    if modelOutput == "optimalPath":
+        return tf.data.Dataset.from_tensor_slices((iStr, oStr))
+    elif modelOutput == "OSPlength":
+        return tf.data.Dataset.from_tensor_slices((iStr, o))

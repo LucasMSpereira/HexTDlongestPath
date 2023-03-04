@@ -13,6 +13,7 @@ pytest = "*"
 hexalattice = "*"
 matplotlib-inline = "*"
 tensorflow = "*"
+tensorboard = "*"
 
 [dev-packages]
 ipykernel = "*"

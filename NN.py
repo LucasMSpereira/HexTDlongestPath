@@ -1,5 +1,8 @@
 #%%
 import utilities
+
+from datetime import datetime
+from pathlib import WindowsPath
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -38,17 +41,16 @@ callback = keras.callbacks.EarlyStopping(
     restore_best_weights = True,
     start_from_epoch = 0
 )
-tf.keras.callbacks.TensorBoard(
-    log_dir='logs',
-    histogram_freq=0,
-    write_graph=True,
-    write_images=False,
-    write_steps_per_second=False,
-    update_freq='epoch',
-    profile_batch=0,
-    embeddings_freq=0,
-    embeddings_metadata=None,
-    **kwargs
+tensorBoardCallback = keras.callbacks.TensorBoard(
+    log_dir = str(WindowsPath("./logs/DNN")) + datetime.now().strftime("%Y%m%d-%H%M%S"),
+    histogram_freq = 5,
+    write_graph = True,
+    write_images = True,
+    write_steps_per_second = True,
+    update_freq = 'epoch',
+    profile_batch = 0,
+    embeddings_freq = 0,
+    embeddings_metadata = None
 )
 model.compile(
     optimizer = keras.optimizers.RMSprop(),  # Optimizer
@@ -57,6 +59,6 @@ model.compile(
 )
 #%%
 history = model.fit(
-  batchesTrainVal, epochs = 10, callbacks = [callback],
+  batchesTrainVal, epochs = 10, callbacks = [callback, tensorBoardCallback],
   verbose = 1,  validation_split = 0.1
 )

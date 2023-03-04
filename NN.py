@@ -1,6 +1,5 @@
 #%%
 import utilities
-
 from datetime import datetime
 from pathlib import WindowsPath
 import tensorflow as tf
@@ -54,8 +53,9 @@ tensorBoardCallback = keras.callbacks.TensorBoard(
 )
 model.compile(
     optimizer = keras.optimizers.RMSprop(),  # Optimizer
-    loss = keras.losses.SparseCategoricalCrossentropy(), # Loss to minimize
-    metrics = [keras.metrics.SparseCategoricalAccuracy()] # Metrics to monitor
+    loss = keras.losses.MeanSquaredError(), # Loss to minimize
+    # Metrics to monitor
+    metrics = [keras.losses.huber(), keras.metrics.MeanAbsoluteError()]
 )
 #%%
 history = model.fit(

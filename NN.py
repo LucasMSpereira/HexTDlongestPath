@@ -11,10 +11,13 @@ random.seed(100)
 rowAmount = colAmount = 10
 ds = utilities.dataManager(0, rowAmount, colAmount)
 goal = "OSPlength"
-dataTrainVal, dataTest = ds.TFdata(goal)
+dataTrain, dataVal, dataTest = ds.TFdata(goal)
 #%%
 batchSize = 256
-batchesTrainVal = dataTrainVal.batch(batch_size = batchSize,
+batchesTrain = dataTrain.batch(batch_size = batchSize,
+  num_parallel_calls = tf.data.AUTOTUNE, deterministic = False
+)
+batchesVal = dataVal.batch(batch_size = batchSize,
   num_parallel_calls = tf.data.AUTOTUNE, deterministic = False
 )
 batchesTest = dataTest.batch(batch_size = batchSize,
@@ -59,6 +62,6 @@ model.compile(
 )
 #%%
 history = model.fit(
-  batchesTrainVal, epochs = 10, callbacks = [callback, tensorBoardCallback],
-  verbose = 1,  validation_split = 0.1
+  batchesTrain, epochs = 10, callbacks = [callback, tensorBoardCallback],
+  verbose = 1, validation_data = batchesVal
 )

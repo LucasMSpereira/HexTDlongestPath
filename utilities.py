@@ -606,17 +606,17 @@ class dataManager():
     numberOfSamples = len(fileDict["osp"])
     # shuffled indices to access dataset in random order
     indices = list(range(0, numberOfSamples))
-    print(indices)
     random.shuffle(indices)
-    print(indices)
     trainInitStr, trainLabel = [], []
     valInitStr, valLabel = [], []
     testInitStr, testLabel = [], []
     trainIndex = math.ceil(numberOfSamples * separation[0])
     valIndex = math.ceil(numberOfSamples * sum(separation))
-    print(f"""{trainIndex} samples for training
-    {valIndex - trainIndex} samples for validation
-    {numberOfSamples - valIndex} samples for testing""")
+    print(f"""
+{trainIndex} samples for training
+{valIndex - trainIndex} samples for validation
+{numberOfSamples - valIndex} samples for testing
+    """)
     # extract ML inputs and labels in shuffled order
     for (sampleNumber, index) in enumerate(indices):
       initStr, optimalStr, osp = fileDict["initStr"][index], fileDict["optimalStr"][index], fileDict["osp"][index]

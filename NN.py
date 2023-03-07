@@ -11,8 +11,7 @@ random.seed(100)
 rowAmount = colAmount = 10
 ds = utilities.dataManager(0, rowAmount, colAmount)
 goal = "OSPlength"
-dataTrain, dataVal, dataTest = ds.TFdata(goal)
-#%%
+dataTrain, dataVal = ds.TFdata(goal)
 batchSize = 256
 batchesTrain = dataTrain.batch(batch_size = batchSize,
   num_parallel_calls = tf.data.AUTOTUNE, deterministic = False
@@ -20,32 +19,31 @@ batchesTrain = dataTrain.batch(batch_size = batchSize,
 batchesVal = dataVal.batch(batch_size = batchSize,
   num_parallel_calls = tf.data.AUTOTUNE, deterministic = False
 )
-batchesTest = dataTest.batch(batch_size = batchSize,
-  num_parallel_calls = tf.data.AUTOTUNE, deterministic = False
-)
 # %%
 inputs = keras.Input(shape = (rowAmount * colAmount,), name = "initialMap")
-x = layers.Dense(64, activation = "relu")(inputs)
-x = layers.Dense(64, activation = "relu")(x)
+x = layers.Dense(80, activation = "relu")(inputs)
+x = layers.Dense(80, activation = "relu")(x)
+x = layers.Dense(80, activation = "relu")(x)
 outputs = layers.Dense(1, name = goal)(x)
 model = keras.Model(
   inputs = inputs, outputs = outputs, name = "DNN_model"
 )
 model.summary()
 # %%
-callback = keras.callbacks.EarlyStopping(
+earlyStopCallback = keras.callbacks.EarlyStopping(
     monitor = 'val_loss',
     min_delta = 0,
-    patience = 0,
+    patience = 40,
     verbose = 1,
     mode = 'auto',
     baseline = None,
     restore_best_weights = True,
-    start_from_epoch = 0
 )
 tensorBoardCallback = keras.callbacks.TensorBoard(
-    log_dir = str(WindowsPath("./logs/DNN")) + datetime.now().strftime("%Y%m%d-%H%M%S"),
-    histogram_freq = 5,
+    # log_dir = str(WindowsPath("./logs/DNN")) + "/" + datetime.now().strftime("%Y%m%d-%H%M%S"),
+    # log_dir = str(WindowsPath("./logs/DNN")) + "/" + str(random.randint(1, 999)),
+    log_dir = str(WindowsPath("./logs/DNN")) + "/" + str(len(list(WindowsPath("./logs/DNN").iterdir())) + 1),
+    histogram_freq = 1,
     write_graph = True,
     write_images = True,
     write_steps_per_second = True,
@@ -55,13 +53,15 @@ tensorBoardCallback = keras.callbacks.TensorBoard(
     embeddings_metadata = None
 )
 model.compile(
-    optimizer = keras.optimizers.RMSprop(),  # Optimizer
+    optimizer = keras.optimizers.RMSprop(learning_rate = 0.1),  # Optimizer
     loss = keras.losses.MeanSquaredError(), # Loss to minimize
     # Metrics to monitor
-    metrics = [keras.losses.huber(), keras.metrics.MeanAbsoluteError()]
+    metrics = [keras.metrics.MeanAbsoluteError()]
 )
 #%%
 history = model.fit(
-  batchesTrain, epochs = 10, callbacks = [callback, tensorBoardCallback],
+  # batchesTrain, epochs = 50, callbacks = [earlyStopCallback, tensorBoardCallback],
+  batchesTrain, epochs = 60, callbacks = [tensorBoardCallback],
   verbose = 1, validation_data = batchesVal
 )
+# %%

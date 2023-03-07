@@ -595,13 +595,11 @@ class dataManager():
       if len(flagList) == 0:
         raise Exception(f"Sample {sample} in \"{hdf5Name}\".hdf5 has problematic flag positioning.")
 
-  def TFdata(self, modelOutput: str, separation = (0.8, 0.1), fileName = "dataset.hdf5"):
+  def TFdata(self, modelOutput: str, trainSplit: float = 0.8, fileName = "dataset.hdf5"):
     """
     From HDF5 dataset file, create tensorflow Dataset objects
     for training/validation and testing
     """
-    if sum(separation) >= 1:
-      raise Exception("Problematic percentages for data splitting.")
     fileDict = self.readHDF5file(fileName, decode = False)
     numberOfSamples = len(fileDict["osp"])
     # shuffled indices to access dataset in random order
@@ -609,13 +607,10 @@ class dataManager():
     random.shuffle(indices)
     trainInitStr, trainLabel = [], []
     valInitStr, valLabel = [], []
-    testInitStr, testLabel = [], []
-    trainIndex = math.ceil(numberOfSamples * separation[0])
-    valIndex = math.ceil(numberOfSamples * sum(separation))
+    trainIndex = math.ceil(numberOfSamples * trainSplit)
     print(f"""
 {trainIndex} samples for training
-{valIndex - trainIndex} samples for validation
-{numberOfSamples - valIndex} samples for testing
+{numberOfSamples - trainIndex} samples for validation
     """)
     # extract ML inputs and labels in shuffled order
     for (sampleNumber, index) in enumerate(indices):
@@ -627,23 +622,14 @@ class dataManager():
           trainLabel.append(list(map(int, optimalStr)))
         elif modelOutput == "OSPlength":
           trainLabel.append(osp)
-      # sample goes to validation split
-      elif sampleNumber <= valIndex:
+      else: # sample goes to validation split
         valInitStr.append(list(map(int, initStr)))
         if modelOutput == "optimalPath":
           valLabel.append(list(map(int, optimalStr)))
         elif modelOutput == "OSPlength":
           valLabel.append(osp)
-      # sample goes to test split
-      else:
-        testInitStr.append(list(map(int, initStr)))
-        if modelOutput == "optimalPath":
-          testLabel.append(list(map(int, optimalStr)))
-        elif modelOutput == "OSPlength":
-          testLabel.append(osp)
-    # return tf Datasets for training, validation and testing
+    # return tf Datasets for training and validation
     return (
       tf.data.Dataset.from_tensor_slices((trainInitStr, trainLabel)),
-      tf.data.Dataset.from_tensor_slices((valInitStr, valLabel)),
-      tf.data.Dataset.from_tensor_slices((testInitStr, testLabel))
+      tf.data.Dataset.from_tensor_slices((valInitStr, valLabel))
     )

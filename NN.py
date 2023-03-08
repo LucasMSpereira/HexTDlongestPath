@@ -11,7 +11,7 @@ import random
 random.seed(100)
 rowAmount = colAmount = 10
 ds = utilities.dataManager(0, rowAmount, colAmount)
-goal = "OSPlength"
+goal = "optimalPath"
 dataTrain, dataVal = ds.TFdata(goal)
 batchSize = 256
 batchesTrain = dataTrain.batch(batch_size = batchSize,
@@ -29,7 +29,8 @@ def build_model(hp):
   x = layers.Dense(layerSize, activation = "relu")(inputs)
   for _ in range(1, numberOfLayers):
     x = layers.Dense(layerSize, activation = "relu")(x)
-  outputs = layers.Dense(1, name = goal)(x)
+  # outputs = layers.Dense(1, name = goal)(x)
+  outputs = layers.Dense(rowAmount * colAmount, name = goal)(x)
   model = keras.Model(
     inputs = inputs, outputs = outputs, name = "DNN_model"
   )
@@ -46,11 +47,12 @@ def build_model(hp):
 tuner = keras_tuner.BayesianOptimization(
     build_model,
     objective = 'val_loss',
-    directory = "logs\\DNN\\OSP_length",
+    # directory = "logs\\DNN\\OSP_length",
+    directory = "logs\\DNN\\OptMap",
     project_name = "HPopt",
-    max_trials = 10
+    max_trials = 20
 )
-tuner.search(batchesTrain, epochs = 20, validation_data = batchesVal)
+tuner.search(batchesTrain, epochs = 30, validation_data = batchesVal)
 tuner.results_summary()
 #%%
 earlyStopCallback = keras.callbacks.EarlyStopping(
@@ -58,16 +60,17 @@ earlyStopCallback = keras.callbacks.EarlyStopping(
     mode = 'auto', baseline = None, restore_best_weights = True,
 )
 tensorBoardCallback = keras.callbacks.TensorBoard(
-    log_dir = "logs\\DNN\\OSP_length\\" +
-      str(len(list(WindowsPath("./logs/DNN").iterdir())) + 1),
+    log_dir = "logs\\DNN\\OptMap\\" +
+      str(len(list(WindowsPath("./logs/DNN/OptMap").iterdir())) + 1),
     histogram_freq = 1, write_graph = True, write_images = True,
     write_steps_per_second = True, update_freq = 'epoch'
 )
 inputs = keras.Input(shape = (rowAmount * colAmount,), name = "initialMap")
-x = layers.Dense(32, activation = "relu")(inputs)
-for _ in range(7):
-  x = layers.Dense(32, activation = "relu")(x)
-outputs = layers.Dense(1, name = goal)(x)
+x = layers.Dense(224, activation = "relu")(inputs)
+for _ in range(1):
+  x = layers.Dense(224, activation = "relu")(x)
+# outputs = layers.Dense(1, name = goal)(x)
+outputs = layers.Dense(rowAmount * colAmount, name = goal)(x)
 restartBestModel = keras.Model(
   inputs = inputs, outputs = outputs, name = "DNN_model"
 )

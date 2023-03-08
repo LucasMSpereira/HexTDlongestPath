@@ -1,6 +1,7 @@
 #%%
 import utilities
 from datetime import datetime
+import keras_tuner
 from pathlib import WindowsPath
 import tensorflow as tf
 from tensorflow import keras
@@ -20,48 +21,64 @@ batchesVal = dataVal.batch(batch_size = batchSize,
   num_parallel_calls = tf.data.AUTOTUNE, deterministic = False
 )
 # %%
-inputs = keras.Input(shape = (rowAmount * colAmount,), name = "initialMap")
-x = layers.Dense(80, activation = "relu")(inputs)
-x = layers.Dense(80, activation = "relu")(x)
-x = layers.Dense(80, activation = "relu")(x)
-outputs = layers.Dense(1, name = goal)(x)
-model = keras.Model(
-  inputs = inputs, outputs = outputs, name = "DNN_model"
+def build_model(hp):
+  inputs = keras.Input(shape = (rowAmount * colAmount,), name = "initialMap")
+  # HP search defines size of hidden layers
+  layerSize = hp.Int("units", min_value = 32, max_value = 256, step = 64)
+  numberOfLayers = hp.Int("nLayers", min_value = 2, max_value = 8, step = 2)
+  x = layers.Dense(layerSize, activation = "relu")(inputs)
+  for _ in range(1, numberOfLayers):
+    x = layers.Dense(layerSize, activation = "relu")(x)
+  outputs = layers.Dense(1, name = goal)(x)
+  model = keras.Model(
+    inputs = inputs, outputs = outputs, name = "DNN_model"
+  )
+  model.compile(
+    optimizer = keras.optimizers.RMSprop(
+    learning_rate = hp.Float("lr", min_value = 1e-4,
+      max_value = 1, sampling = "log")
+    ),
+    loss = keras.losses.MeanSquaredError(),
+    metrics = [keras.metrics.MeanAbsoluteError()]
+  )
+  return model
+#%%
+tuner = keras_tuner.BayesianOptimization(
+    build_model,
+    objective = 'val_loss',
+    directory = "logs\\DNN\\OSP_length",
+    project_name = "HPopt",
+    max_trials = 10
 )
-model.summary()
-# %%
+tuner.search(batchesTrain, epochs = 20, validation_data = batchesVal)
+tuner.results_summary()
+#%%
 earlyStopCallback = keras.callbacks.EarlyStopping(
-    monitor = 'val_loss',
-    min_delta = 0,
-    patience = 40,
-    verbose = 1,
-    mode = 'auto',
-    baseline = None,
-    restore_best_weights = True,
+    monitor = 'val_loss', min_delta = 0, patience = 20, verbose = 1,
+    mode = 'auto', baseline = None, restore_best_weights = True,
 )
 tensorBoardCallback = keras.callbacks.TensorBoard(
-    # log_dir = str(WindowsPath("./logs/DNN")) + "/" + datetime.now().strftime("%Y%m%d-%H%M%S"),
-    # log_dir = str(WindowsPath("./logs/DNN")) + "/" + str(random.randint(1, 999)),
-    log_dir = str(WindowsPath("./logs/DNN")) + "/" + str(len(list(WindowsPath("./logs/DNN").iterdir())) + 1),
-    histogram_freq = 1,
-    write_graph = True,
-    write_images = True,
-    write_steps_per_second = True,
-    update_freq = 'epoch',
-    profile_batch = 0,
-    embeddings_freq = 0,
-    embeddings_metadata = None
+    log_dir = "logs\\DNN\\OSP_length\\" +
+      str(len(list(WindowsPath("./logs/DNN").iterdir())) + 1),
+    histogram_freq = 1, write_graph = True, write_images = True,
+    write_steps_per_second = True, update_freq = 'epoch'
 )
-model.compile(
-    optimizer = keras.optimizers.RMSprop(learning_rate = 0.1),  # Optimizer
-    loss = keras.losses.MeanSquaredError(), # Loss to minimize
-    # Metrics to monitor
+inputs = keras.Input(shape = (rowAmount * colAmount,), name = "initialMap")
+x = layers.Dense(32, activation = "relu")(inputs)
+for _ in range(7):
+  x = layers.Dense(32, activation = "relu")(x)
+outputs = layers.Dense(1, name = goal)(x)
+restartBestModel = keras.Model(
+  inputs = inputs, outputs = outputs, name = "DNN_model"
+)
+restartBestModel.summary()
+restartBestModel.compile(
+    optimizer = keras.optimizers.RMSprop(learning_rate = 0.0001),
+    loss = keras.losses.MeanSquaredError(),
     metrics = [keras.metrics.MeanAbsoluteError()]
 )
-#%%
-history = model.fit(
-  # batchesTrain, epochs = 50, callbacks = [earlyStopCallback, tensorBoardCallback],
-  batchesTrain, epochs = 60, callbacks = [tensorBoardCallback],
+restartBestModel.fit(
+  batchesTrain, epochs = 100, callbacks = [earlyStopCallback, tensorBoardCallback],
   verbose = 1, validation_data = batchesVal
 )
 # %%

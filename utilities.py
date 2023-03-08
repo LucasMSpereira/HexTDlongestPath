@@ -2,7 +2,7 @@
 
 import copy
 from pathlib import WindowsPath
-from hexalattice.hexalattice import *
+# from hexalattice.hexalattice import *
 import h5py
 import random
 import pygad
@@ -595,7 +595,7 @@ class dataManager():
       if len(flagList) == 0:
         raise Exception(f"Sample {sample} in \"{hdf5Name}\".hdf5 has problematic flag positioning.")
 
-  def TFdata(self, modelOutput: str, trainSplit: float = 0.8, fileName = "dataset.hdf5"):
+  def TFdata(self, modelOutput: str, trainSplit: float = 0.9, fileName = "dataset.hdf5"):
     """
     From HDF5 dataset file, create tensorflow Dataset objects
     for training/validation and testing

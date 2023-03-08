@@ -14,7 +14,7 @@ hexalattice = "*"
 matplotlib-inline = "*"
 tensorboard = "*"
 tensorflow = "*"
-keras-tuner = "*"
+keras-tuner = {extras = ["bayesian"], version = "*"}
 
 [dev-packages]
 ipykernel = "*"

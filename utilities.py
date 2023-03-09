@@ -2,7 +2,7 @@
 
 import copy
 from pathlib import WindowsPath
-# from hexalattice.hexalattice import *
+from hexalattice.hexalattice import *
 import h5py
 import random
 import pygad

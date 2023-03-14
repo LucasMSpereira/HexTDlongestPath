@@ -166,6 +166,17 @@ class graphManager():
     """
     return nx.from_dict_of_lists(self.binaryToConnections(binaryDefinition))
   
+  def interpretMLout(self, initialMap: list, predictedOSP):
+    """Interpret OSP prediction as map"""
+    # mapList = list(map(str, np.asarray(initialMap)[0]))
+    optMap = copy.copy(initialMap)
+    predictedOSP = np.asarray(predictedOSP)[0]
+    for (index, code) in enumerate(initialMap):
+      if code == "1":
+        if predictedOSP[index] < 0.55:
+          optMap[index] = "0"
+    return optMap
+
   def mapCheck(self, mapDefinition: list):
     """
     1) Hexagons can't be added to initial map
@@ -313,6 +324,10 @@ def pairwise(iterable):
   return zip(a, b)
 
 def listToStr(l: list):
+  """
+  Turn all elements in a list into strings. Then concatenate
+  them, and return the single resulting string.
+  """
   return ''.join(map(str, l))
 
 def flagsRowsAndCols(initialMapString: str, nCol: int, printInfo = True):
@@ -595,10 +610,12 @@ class dataManager():
       if len(flagList) == 0:
         raise Exception(f"Sample {sample} in \"{hdf5Name}\".hdf5 has problematic flag positioning.")
 
-  def TFdata(self, modelOutput: str, trainSplit: float = 0.9, fileName = "dataset.hdf5"):
+  def TFdata(
+      self, modelOutput: str, trainSplit: float = 0.9, fileName = "dataset.hdf5"
+  ):
     """
     From HDF5 dataset file, create tensorflow Dataset objects
-    for training/validation and testing
+    for training/validation
     """
     fileDict = self.readHDF5file(fileName, decode = False)
     numberOfSamples = len(fileDict["osp"])
@@ -607,29 +624,38 @@ class dataManager():
     random.shuffle(indices)
     trainInitStr, trainLabel = [], []
     valInitStr, valLabel = [], []
+    lengthAndOSP = ([], [])
     trainIndex = math.ceil(numberOfSamples * trainSplit)
-    print(f"""
-{trainIndex} samples for training
-{numberOfSamples - trainIndex} samples for validation
-    """)
+    if modelOutput != "both":
+      print(f"""
+        {trainIndex} samples for training
+        {numberOfSamples - trainIndex} samples for validation
+      """)
     # extract ML inputs and labels in shuffled order
     for (sampleNumber, index) in enumerate(indices):
       initStr, optimalStr, osp = fileDict["initStr"][index], fileDict["optimalStr"][index], fileDict["osp"][index]
-      # sample goes to training split
-      if sampleNumber <= trainIndex:
-        trainInitStr.append(list(map(int, initStr)))
-        if modelOutput == "optimalPath":
+      if sampleNumber <= trainIndex: # sample goes to training split
+        if modelOutput == "both":
+          continue
+        elif modelOutput == "optimalPath":
           trainLabel.append(list(map(int, optimalStr)))
         elif modelOutput == "OSPlength":
           trainLabel.append(osp)
+        trainInitStr.append(list(map(int, initStr)))
       else: # sample goes to validation split
         valInitStr.append(list(map(int, initStr)))
-        if modelOutput == "optimalPath":
+        if modelOutput == "both":
+          lengthAndOSP[0].append(osp)
+          lengthAndOSP[1].append(list(map(int, optimalStr)))
+        elif modelOutput == "optimalPath":
           valLabel.append(list(map(int, optimalStr)))
         elif modelOutput == "OSPlength":
           valLabel.append(osp)
-    # return tf Datasets for training and validation
-    return (
-      tf.data.Dataset.from_tensor_slices((trainInitStr, trainLabel)),
-      tf.data.Dataset.from_tensor_slices((valInitStr, valLabel))
-    )
+    if modelOutput == "both":
+      return tf.data.Dataset.from_tensor_slices((valInitStr, *lengthAndOSP))
+    else:
+      # return tf Datasets for training and validation
+      return (
+        tf.data.Dataset.from_tensor_slices((trainInitStr, trainLabel)),
+        tf.data.Dataset.from_tensor_slices((valInitStr, valLabel))
+      )

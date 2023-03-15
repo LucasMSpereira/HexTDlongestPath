@@ -2,7 +2,6 @@
 
 import copy
 from pathlib import WindowsPath
-from hexalattice.hexalattice import *
 import h5py
 import random
 import pygad
@@ -13,6 +12,7 @@ import networkx as nx
 import math
 import itertools
 import tensorflow as tf
+from hexalattice.hexalattice import *
 
 class graphManager():
   """

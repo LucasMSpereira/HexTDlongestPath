@@ -25,7 +25,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 pytest pytest-cov pipenv
         pipenv install
-        pipenv shell
         pipenv requirements
     - name: Lint with flake8
       run: |
@@ -34,4 +33,6 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
-      run: pytest tests.py
+      run: |
+        pipenv shell
+        pytest tests.py

@@ -11,7 +11,7 @@ from pathlib import WindowsPath
 #%%
 # initialize dataset object
 sampleNum = 0
-ds = utilities.dataset(
+ds = utilities.dataManager(
   amountOfSamples = sampleNum, nRow = 10, nCol = 10
 )
 #%%

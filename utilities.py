@@ -1,5 +1,7 @@
+# general utilities
+
+import copy
 from pathlib import WindowsPath
-from hexalattice.hexalattice import *
 import h5py
 import random
 import pygad
@@ -9,6 +11,8 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import math
 import itertools
+import tensorflow as tf
+from hexalattice.hexalattice import *
 
 class graphManager():
   """
@@ -162,6 +166,17 @@ class graphManager():
     """
     return nx.from_dict_of_lists(self.binaryToConnections(binaryDefinition))
   
+  def interpretMLout(self, initialMap: list, predictedOSP):
+    """Interpret OSP prediction as map"""
+    # mapList = list(map(str, np.asarray(initialMap)[0]))
+    optMap = copy.copy(initialMap)
+    predictedOSP = np.asarray(predictedOSP)[0]
+    for (index, code) in enumerate(initialMap):
+      if code == "1":
+        if predictedOSP[index] < 0.55:
+          optMap[index] = "0"
+    return optMap
+
   def mapCheck(self, mapDefinition: list):
     """
     1) Hexagons can't be added to initial map
@@ -309,6 +324,10 @@ def pairwise(iterable):
   return zip(a, b)
 
 def listToStr(l: list):
+  """
+  Turn all elements in a list into strings. Then concatenate
+  them, and return the single resulting string.
+  """
   return ''.join(map(str, l))
 
 def flagsRowsAndCols(initialMapString: str, nCol: int, printInfo = True):
@@ -327,7 +346,7 @@ def flagsRowsAndCols(initialMapString: str, nCol: int, printInfo = True):
   else:
     return flagPos
 
-class dataset():
+class dataManager():
   
   """Utilities for dataset generation and processing"""
   
@@ -459,23 +478,24 @@ class dataset():
     # return index and OSP length of best map
     return self.graphUtils.bestMap()
 
-  def readHDF5file(self, hdf5Name):
+  def readHDF5file(self, hdf5Name, decode = True):
     """
     From hdf5 file, retrieve initial and optimal map definitions as used by
-    graphManager objects, OSP lengths, flag rows and columns, and map dimensions
+    graphManager objects, OSP lengths, flag rows and columns, and map dimensions.
+    'decode' kwarg controls if map strings are decoded
     """
     # read data from file
-    filePath = str(WindowsPath("C:/Users/kaoid/Desktop/HexTDdataset")) + "\\" + hdf5Name
+    filePath = str(WindowsPath(".")) + "\\" + hdf5Name
     with h5py.File(filePath, 'r') as f:
       osp = list(f['OSP_length'])
       initStr = list(map(list, list(f['initial_string'].asstr())))
       optStr = list(map(list, list(f['optimal_string'].asstr())))
+    if not decode:
+      encodedInitStr = copy.deepcopy(initStr)
+      encodedOptimalStr = copy.deepcopy(optStr)
     # get number of rows and columns in map
-    underscoreIndex = hdf5Name.find("_")
-    rIndex = hdf5Name.find("r")
-    cIndex = hdf5Name.find("c")
-    numRow = int(hdf5Name[underscoreIndex + 1 : rIndex])
-    numCol = int(hdf5Name[rIndex + 1 : cIndex])
+    numRow = self.nRow
+    numCol = self.nCol
     basicInitStr, basicOptimalStr, flagRow, flagCol = [], [], [], []
     # iterate in samples
     for (initialSampleStr, optimalSampleStr) in zip(initStr, optStr):
@@ -493,7 +513,15 @@ class dataset():
         sampleFlagCol.append(flagID - (row - 1) * numCol)
       flagRow.append(sampleFlagRow)
       flagCol.append(sampleFlagCol)
-    return basicInitStr, basicOptimalStr, numRow, numCol, flagRow, flagCol, osp
+    return {
+      "initStr": basicInitStr if decode else encodedInitStr,
+      "optimalStr": basicOptimalStr if decode else encodedOptimalStr,
+      "numRow": numRow,
+      "numCol": numCol,
+      "flagRow": flagRow,
+      "flagCol": flagCol,
+      "osp": osp
+    }
 
   def randomConnectivity(self, nRow: int, nCol: int, flagAmount: int = 2, density: float = 0.8):
     """Create random connectivity for current sample"""
@@ -581,3 +609,53 @@ class dataset():
         flagList.append(flagID - (row - 1) * numCol)
       if len(flagList) == 0:
         raise Exception(f"Sample {sample} in \"{hdf5Name}\".hdf5 has problematic flag positioning.")
+
+  def TFdata(
+      self, modelOutput: str, trainSplit: float = 0.9, fileName = "dataset.hdf5"
+  ):
+    """
+    From HDF5 dataset file, create tensorflow Dataset objects
+    for training/validation
+    """
+    fileDict = self.readHDF5file(fileName, decode = False)
+    numberOfSamples = len(fileDict["osp"])
+    # shuffled indices to access dataset in random order
+    indices = list(range(0, numberOfSamples))
+    random.shuffle(indices)
+    trainInitStr, trainLabel = [], []
+    valInitStr, valLabel = [], []
+    lengthAndOSP = ([], [])
+    trainIndex = math.ceil(numberOfSamples * trainSplit)
+    if modelOutput != "both":
+      print(f"""
+        {trainIndex} samples for training
+        {numberOfSamples - trainIndex} samples for validation
+      """)
+    # extract ML inputs and labels in shuffled order
+    for (sampleNumber, index) in enumerate(indices):
+      initStr, optimalStr, osp = fileDict["initStr"][index], fileDict["optimalStr"][index], fileDict["osp"][index]
+      if sampleNumber <= trainIndex: # sample goes to training split
+        if modelOutput == "both":
+          continue
+        elif modelOutput == "optimalPath":
+          trainLabel.append(list(map(int, optimalStr)))
+        elif modelOutput == "OSPlength":
+          trainLabel.append(osp)
+        trainInitStr.append(list(map(int, initStr)))
+      else: # sample goes to validation split
+        valInitStr.append(list(map(int, initStr)))
+        if modelOutput == "both":
+          lengthAndOSP[0].append(osp)
+          lengthAndOSP[1].append(list(map(int, optimalStr)))
+        elif modelOutput == "optimalPath":
+          valLabel.append(list(map(int, optimalStr)))
+        elif modelOutput == "OSPlength":
+          valLabel.append(osp)
+    if modelOutput == "both":
+      return tf.data.Dataset.from_tensor_slices((valInitStr, *lengthAndOSP))
+    else:
+      # return tf Datasets for training and validation
+      return (
+        tf.data.Dataset.from_tensor_slices((trainInitStr, trainLabel)),
+        tf.data.Dataset.from_tensor_slices((valInitStr, valLabel))
+      )

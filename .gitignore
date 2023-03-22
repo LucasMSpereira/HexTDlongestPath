@@ -1,1 +1,39 @@
-extra
+logs
+extra/Diagrams/.$data pipeline.drawio.bkp
+extra/Diagrams/.$Dataset generation.drawio.bkp
+extra/Diagrams/.$Dataset generation.drawio.dtmp
+extra/Diagrams/data pipeline.drawio
+extra/Diagrams/Dataset generation.drawio
+extra/etc/dataGenerationStats.png
+extra/etc/dataset study.pdf
+extra/etc/EA statistics.png
+extra/etc/first samples.png
+extra/etc/hexa IDs.png
+extra/etc/hexTDnotes.xlsx
+extra/etc/maps.png
+extra/etc/requirements.txt
+extra/etc/yml.txt
+extra/HexTDdataset/10r10c20000.hdf5
+extra/HexTDdataset/705_10r10c1000.hdf5
+extra/HexTDdataset/1017_10r10c1000.hdf5
+extra/HexTDdataset/1349_10r10c1000.hdf5
+extra/HexTDdataset/1440_10r10c1000.hdf5
+extra/HexTDdataset/1441_10r10c1000.hdf5
+extra/HexTDdataset/1810_10r10c1000.hdf5
+extra/HexTDdataset/2195_10r10c1000.hdf5
+extra/HexTDdataset/2831_10r10c1000.hdf5
+extra/HexTDdataset/3153_10r10c1000.hdf5
+extra/HexTDdataset/4285_10r10c1000.hdf5
+extra/HexTDdataset/4709_10r10c1000.hdf5
+extra/HexTDdataset/5807_10r10c1000.hdf5
+extra/HexTDdataset/6129_10r10c1000.hdf5
+extra/HexTDdataset/7012_10r10c1000.hdf5
+extra/HexTDdataset/7034_10r10c1000.hdf5
+extra/HexTDdataset/7214_10r10c1000.hdf5
+extra/HexTDdataset/7321_10r10c1000.hdf5
+extra/HexTDdataset/7865_10r10c1000.hdf5
+extra/HexTDdataset/8160_10r10c1000.hdf5
+extra/HexTDdataset/8258_10r10c1000.hdf5
+extra/ML plots/DNN OSP length.png
+extra/ML plots/DNN OSP.png
+extra/etc/PR_CI.yml

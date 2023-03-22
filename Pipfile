@@ -10,8 +10,11 @@ pygad = "*"
 scipy = "*"
 h5py = "*"
 pytest = "*"
-hexalattice = "*"
 matplotlib-inline = "*"
+tensorboard = "*"
+tensorflow = "*"
+keras-tuner = {extras = ["bayesian"], version = "*"}
+hexalattice = {path = "./extra/hexalattice-master.zip"}
 
 [dev-packages]
 ipykernel = "*"

@@ -4,9 +4,10 @@
 import time
 import datetime
 import utilities
+import data_utils
 #%%
 # initialize dataset object
-ds = utilities.dataManager(
+ds = data_utils.dataManager(
   filePath = "path",
   amountOfSamples = 0, nRow = 10, nCol = 10
 )

@@ -37,3 +37,9 @@ extra/HexTDdataset/8258_10r10c1000.hdf5
 extra/ML plots/DNN OSP length.png
 extra/ML plots/DNN OSP.png
 extra/etc/PR_CI.yml
+extra/articles/dynamicGDL.pdf
+extra/articles/GraphNNreview.pdf
+extra/articles/graphTransformer.pdf
+extra/etc/graphTransformer.PNG
+extra/etc/graphTransformerBlog.pdf
+extra/etc/py env.txt

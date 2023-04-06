@@ -6,8 +6,9 @@
   # visually compare outputs and labels
 #%% Imports
 import utilities
+import data_utils
+import graph_manager
 import numpy as np
-from datetime import datetime
 import keras_tuner
 import math
 from pathlib import WindowsPath
@@ -18,7 +19,7 @@ import random
 #%% Definitions
 random.seed(100)
 rowAmount = colAmount = 10
-ds = utilities.dataManager(0, rowAmount, colAmount)
+ds = data_utils.dataManager(0, rowAmount, colAmount)
 # goal = "optimalPath"
 goal = "OSPlength"
 #%% Data
@@ -121,7 +122,7 @@ restartBestModel.save(modelPath)
 OSPmodel = tf.keras.models.load_model('logs\\DNN\\OptMap\\DNN_OSP.h5')
 # Load model that predicts OSP length
 OSPlengthModel = tf.keras.models.load_model('logs\\DNN\\OSP_length\\DNN_OSP_length.h5')
-ds = utilities.dataManager(0, rowAmount, colAmount)
+ds = data_utils.dataManager(0, rowAmount, colAmount)
 compareData = ds.TFdata("both") # dataset with both labels
 #%% Visually compare labels and outputs from trained models
 for (initMapSample, OSPlengthSample, OSPsample) in compareData.take(5).batch(1):
@@ -138,7 +139,7 @@ for (initMapSample, OSPlengthSample, OSPsample) in compareData.take(5).batch(1):
     flagsRow.append(row - 1)
     flagsCol.append(hexID - (row - 1) * colAmount)
   # instantiate graphManager
-  gm = utilities.graphManager(wholeInitStr, rowAmount, colAmount,
+  gm = graph_manager.graphManager(wholeInitStr, rowAmount, colAmount,
     flagsRow, flagsCol
   )
   gm.plotMesh(0) # plot initial map

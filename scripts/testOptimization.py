@@ -4,11 +4,11 @@
 import time
 import pygad
 import datetime
-import utilities
+import graph_manager
 #%%
 mapRows = 10
 mapCols = 10
-sample = utilities.graphManager(
+sample = graph_manager.graphManager(
   # initial map string
   "4111011003111111101011011111101111101110111111111111111111110111011111011111101101011111113001101112",
   mapRows, mapCols, # n° of rows and cols

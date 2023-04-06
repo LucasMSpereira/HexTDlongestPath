@@ -4,6 +4,7 @@
 import h5py
 from collections import Counter
 import utilities
+import data_utils
 from pathlib import WindowsPath
 #%%
 amountOfSamples = 20000
@@ -53,7 +54,7 @@ l = list(countOSP.keys())
 l.sort()
 for k in l:
   print(k, countOSP[k])
-ds = utilities.dataManager(
+ds = data_utils.dataManager(
   amountOfSamples = 0, nRow = 10, nCol = 10
 )
 ds.studyHDF5file("10r10c20000.hdf5")

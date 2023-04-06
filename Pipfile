@@ -11,10 +11,9 @@ scipy = "*"
 h5py = "*"
 pytest = "*"
 matplotlib-inline = "*"
-tensorboard = "*"
-tensorflow = "*"
-keras-tuner = {extras = ["bayesian"], version = "*"}
 hexalattice = {path = "./extra/hexalattice-master.zip"}
+tf-agents = "*"
+tensorflow = "*"
 
 [dev-packages]
 ipykernel = "*"

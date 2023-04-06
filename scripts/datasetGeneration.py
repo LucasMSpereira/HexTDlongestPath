@@ -3,15 +3,13 @@
 
 import time
 import random
-import utilities
+import data_utils
+import graph_manager
 from pathlib import WindowsPath
-# from importlib.machinery import SourceFileLoader
-# utilities = SourceFileLoader("utilities", str(WindowsPath(".\\utilities.py"))).load_module()
-# import utilities
 #%%
 # initialize dataset object
 sampleNum = 0
-ds = utilities.dataManager(
+ds = data_utils.dataManager(
   amountOfSamples = sampleNum, nRow = 10, nCol = 10
 )
 #%%
@@ -33,13 +31,13 @@ if sampleNum == 0:
     print(index + 1, hdf5File.name)
     init, opt, nRow, nCol, flagRow, flagCol, osp = ds.readHDF5file(hdf5File.name)
     for sample in random.sample(range(1000), k = 1):
-      initMapObj = utilities.graphManager(
+      initMapObj = graph_manager.graphManager(
         init[sample], nRow, nCol,
         flagRow[sample], flagCol[sample]
       )
       initMapObj.plotMesh(0)
       print(initMapObj.bestMap()[1])
-      optMapObj = utilities.graphManager(
+      optMapObj = graph_manager.graphManager(
         opt[sample], nRow, nCol,
         flagRow[sample], flagCol[sample]
       )

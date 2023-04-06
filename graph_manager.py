@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import math
 import itertools
+import utilities as utils
 from hexalattice.hexalattice import *
 
 class graphManager():
@@ -53,7 +54,7 @@ class graphManager():
     """
     intermediatePath = []
     # A* in each section:
-    for (source, target) in pairwise(itertools.chain(*self.spot.values())):
+    for (source, target) in utils.pairwise(itertools.chain(*self.spot.values())):
       intermediatePath.append(self.aStarPathing(mapGraph, source, target))
     return intermediatePath
 

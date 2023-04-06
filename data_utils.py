@@ -8,6 +8,8 @@ import statistics
 import numpy as np
 import networkx as nx
 import math
+import graph_manager as graphM
+import utilities as utils
 import itertools
 import tensorflow as tf
 
@@ -53,7 +55,7 @@ class dataManager():
           self.graphUtils.mapDefinition[mapIndex][spotID] = 3 + pos
         elif spotClass == "base":
           self.graphUtils.mapDefinition[mapIndex][spotID] = 3 + len(self.graphUtils.spot["flag"])
-    return listToStr(self.graphUtils.mapDefinition[mapIndex])
+    return utils.listToStr(self.graphUtils.mapDefinition[mapIndex])
 
   def decodeMapString(self, encodedMapString: list) -> list:
     """
@@ -139,7 +141,7 @@ class dataManager():
 
     # run evolutionary optimization for 100 generations with
     # population size of 50 individuals
-    optimize(50, 100, self.graphUtils, pathLength, callback = callback_gen)
+    utils.optimize(50, 100, self.graphUtils, pathLength, callback = callback_gen)
     # return index and OSP length of best map
     return self.graphUtils.bestMap()
 
@@ -166,10 +168,10 @@ class dataManager():
     for (initialSampleStr, optimalSampleStr) in zip(initStr, optStr):
       # get initial map string in basic format
       sampleSpot = self.decodeMapString(initialSampleStr)
-      basicInitStr.append(listToStr(initialSampleStr))
+      basicInitStr.append(utils.listToStr(initialSampleStr))
       # get optimal map string in basic format
       self.decodeMapString(optimalSampleStr)
-      basicOptimalStr.append(listToStr(optimalSampleStr))
+      basicOptimalStr.append(utils.listToStr(optimalSampleStr))
       # get sorted positions of flags
       sampleFlagRow, sampleFlagCol = [], []
       for flagID in sampleSpot["flag"]:
@@ -206,10 +208,10 @@ class dataManager():
         randomMap[index] = 4
       else: # intermediary indices recieve flags
         randomMap[index] = 3
-    mapString = listToStr(randomMap)
+    mapString = utils.listToStr(randomMap)
     try:
-      self.graphUtils = graphManager(mapString, nRow, nCol, 
-        *list(flagsRowsAndCols(
+      self.graphUtils = graphM.graphManager(mapString, nRow, nCol, 
+        *list(utils.flagsFromMap(
           mapString, nCol, printInfo = False
       ).values()))
     except:
@@ -256,16 +258,16 @@ class dataManager():
     # iterate in samples
     for (sample, (initialSampleStr, optimalSampleStr)) in enumerate(zip(initStr, optStr)):
       # get initial map string in basic format
-      if len(listToStr(initialSampleStr)) * len(listToStr(optimalSampleStr)) == 0:
+      if len(utils.listToStr(initialSampleStr)) * len(utils.listToStr(optimalSampleStr)) == 0:
           raise Exception(f"Sample {sample} in \"{hdf5Name}\".hdf5 has empty map definition.")
       sampleSpot = self.decodeMapString(initialSampleStr)
       for pos in sampleSpot.values():
         if len(pos) == 0:
           raise Exception(f"Sample {sample} in \"{hdf5Name}\".hdf5 has problematic 'spot' dict.")
-      basicInitStr.append(listToStr(initialSampleStr))
+      basicInitStr.append(utils.listToStr(initialSampleStr))
       # get optimal map string in basic format
       self.decodeMapString(optimalSampleStr)
-      basicOptimalStr.append(listToStr(optimalSampleStr))
+      basicOptimalStr.append(utils.listToStr(optimalSampleStr))
       # get sorted positions of flags
       flagList = []
       for flagID in sampleSpot["flag"]:

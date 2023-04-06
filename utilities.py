@@ -2,7 +2,45 @@
 
 import pygad
 import math
+import graph_manager
 import itertools
+import data_utils
+
+def flagsFromDict(spotDict: dict, colAmount: int):
+  """
+  Return rows and columns of flags from ordered dictionary
+  """
+  flagsRow, flagsCol = [], []
+  for hexID in spotDict["flag"]:
+    row = int(math.ceil((hexID + 0.1) / colAmount))
+    flagsRow.append(row - 1)
+    flagsCol.append(hexID - (row - 1) * colAmount)
+  return flagsRow, flagsCol
+
+def flagsFromMap(initialMapString: str, nCol: int, printInfo = True):
+  
+  """Print or return rows and columns of flags from map definitions"""
+  
+  flagPos = {"row": [], "col": []}
+  for (index, code) in enumerate(initialMapString):
+    if int(code) == 3:
+      row = int(math.ceil((index + 0.1) / nCol))
+      flagPos["row"].append(row - 1)
+      flagPos["col"].append(index - (row - 1) * nCol)
+  if printInfo:
+    for (flagNum, _) in enumerate(flagPos["row"]):
+      print(f"""
+      Flag in row {flagPos["row"][flagNum]} column {flagPos["col"][flagNum]}
+      """)
+  else:
+    return flagPos
+
+def listToStr(l: list):
+  """
+  Turn all elements in a list into strings. Then concatenate
+  them, and return the single resulting string.
+  """
+  return ''.join(map(str, l))
 
 def optimize(
   population: int, generations: int, sampleObject,
@@ -28,32 +66,23 @@ def optimize(
   ga_instance.run() # run optimization
   return ga_instance.best_solution()[1]
 
-# available in standard module itertools from version 3.10 onwards
+# available in standard module 'itertools' from version 3.10 onwards
 def pairwise(iterable):
   # pairwise('ABCDEFG') --> AB BC CD DE EF FG
   a, b = itertools.tee(iterable)
   next(b, None)
   return zip(a, b)
 
-def listToStr(l: list):
+def pathLengthFromString(mapDef: list, nRow: int, nCol: int):
   """
-  Turn all elements in a list into strings. Then concatenate
-  them, and return the single resulting string.
+  Determine length of shortest path from map string
   """
-  return ''.join(map(str, l))
-
-def flagsRowsAndCols(initialMapString: str, nCol: int, printInfo = True):
-  """Print rows and columns of flags"""
-  flagPos = {"row": [], "col": []}
-  for (index, code) in enumerate(initialMapString):
-    if int(code) == 3:
-      row = int(math.ceil((index + 0.1) / nCol))
-      flagPos["row"].append(row - 1)
-      flagPos["col"].append(index - (row - 1) * nCol)
-  if printInfo:
-    for (flagNum, _) in enumerate(flagPos["row"]):
-      print(f"""
-      Flag in row {flagPos["row"][flagNum]} column {flagPos["col"][flagNum]}
-      """)
-  else:
-    return flagPos
+  # instantiate data manager
+  dm = data_utils.dataManager(0, nRow, nCol)
+  # decode map string to graph manager format
+  spotDict = dm.decodeMapString(mapDef)
+  # instantiate graph manager
+  graphM = graph_manager.graphManager(
+    listToStr(mapDef), nRow, nCol, *flagsFromDict(spotDict, nCol)
+  )
+  return graphM.totalSteps(graphM.mapDefinition[0])

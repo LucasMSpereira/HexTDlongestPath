@@ -112,8 +112,8 @@ class dataManager():
           mapCheck = True
       try:
         # attempt to create graph representation of map
-        nx.from_dict_of_lists(connection)
-      except: # discard map in case of isolated hexagon
+        return nx.from_dict_of_lists(connection)
+      except: # discard map in case of isolated spot
         return self.generateMap()
 
   def optimizeSample(self):

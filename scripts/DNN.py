@@ -123,9 +123,9 @@ OSPmodel = tf.keras.models.load_model('logs\\DNN\\OptMap\\DNN_OSP.h5')
 # Load model that predicts OSP length
 OSPlengthModel = tf.keras.models.load_model('logs\\DNN\\OSP_length\\DNN_OSP_length.h5')
 ds = data_utils.dataManager(0, rowAmount, colAmount)
-compareData = ds.TFdata("both") # dataset with both labels
+compareData = ds.TFdata("OSPlength") # dataset with both labels
 #%% Visually compare labels and outputs from trained models
-for (initMapSample, OSPlengthSample, OSPsample) in compareData.take(5).batch(1):
+for (initMapSample, OSPlengthSample) in compareData.take(5).batch(1):
   # use models in current sample
   map0 = np.asarray(initMapSample).reshape(-1, 1).transpose()
   predOSP = OSPmodel.predict(map0)

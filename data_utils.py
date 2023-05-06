@@ -60,12 +60,14 @@ class dataManager():
   def decodeMapString(self, encodedMapString: list) -> list:
     """
     Decode map string from HDF5 file back to graphManager format.
-    Also returns 'spot' dictionary.
+    Also returns 'spot' dictionary with flags sorted by hex ID.
     """
     spot = {"spawn": [], "flag": [], "base": []}
     flagDict = {}
     intMap = list(map(int, encodedMapString))
+    # maximum hex ID in encoded map
     maxCode = max(intMap)
+    # iterate in encoded map and decode it
     for (hexID, code) in enumerate(intMap):
       if code == 2: # spawn
         spot["spawn"].append(hexID)
@@ -75,6 +77,7 @@ class dataManager():
       elif code != 0 and code != 1: # flags
         encodedMapString[hexID] = "3"
         flagDict[code] = hexID
+    # sort flags by hex ID
     flagKey = list(flagDict.keys())
     flagKey.sort()
     spot["flag"] = [flagDict[i] for i in flagKey]
@@ -206,7 +209,7 @@ class dataManager():
         randomMap[index] = 2
       elif pos == len(indices) - 1: # player's base in last index
         randomMap[index] = 4
-      else: # intermediary indices recieve flags
+      else: # intermediary indices receive flags
         randomMap[index] = 3
     mapString = utils.listToStr(randomMap)
     try:
@@ -295,12 +298,15 @@ class dataManager():
     trainIndex = math.ceil(numberOfSamples * trainSplit)
     if modelOutput != "both":
       print(f"""
-        {trainIndex} samples for training
-        {numberOfSamples - trainIndex} samples for validation
+      {trainIndex} samples for training
+      {numberOfSamples - trainIndex} samples for validation
       """)
     # extract ML inputs and labels in shuffled order
     for (sampleNumber, index) in enumerate(indices):
-      initStr, optimalStr, osp = fileDict["initStr"][index], fileDict["optimalStr"][index], fileDict["osp"][index]
+      # get data from file
+      initStr = fileDict["initStr"][index] # initial map
+      optimalStr = fileDict["optimalStr"][index] # optimal map
+      osp = fileDict["osp"][index] # OSP length
       if sampleNumber <= trainIndex: # sample goes to training split
         if modelOutput == "both":
           continue
@@ -318,10 +324,12 @@ class dataManager():
           valLabel.append(list(map(int, optimalStr)))
         elif modelOutput == "OSPlength":
           valLabel.append(osp)
+    # return tf Datasets for training and validation
     if modelOutput == "both":
+      # include initial and optimal maps, and OSP length
       return tf.data.Dataset.from_tensor_slices((valInitStr, *lengthAndOSP))
     else:
-      # return tf Datasets for training and validation
+      # include initial map, and OSP length or optimal map
       return (
         tf.data.Dataset.from_tensor_slices((trainInitStr, trainLabel)),
         tf.data.Dataset.from_tensor_slices((valInitStr, valLabel))

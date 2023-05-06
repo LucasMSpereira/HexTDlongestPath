@@ -245,7 +245,7 @@ class graphManager():
 
   def stringToBinary(self, mapString: str):
     """
-    In instantiation of class, get binary representation
+    Get binary representation
     from string of integers describing hexagons:
     0 - void; 1 - full
     2 - spawn; 3 - flag

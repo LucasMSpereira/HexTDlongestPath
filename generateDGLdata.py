@@ -1,6 +1,8 @@
 # Script used to generate annotated DGL graph
 # dataset for graph transformer
 
+#%% Imports
+
 import os
 os.environ['DGLBACKEND'] = 'tensorflow'
 from graph_manager import graphManager
@@ -11,6 +13,8 @@ import numpy as np
 import utilities as utils
 import networkx as nx
 import data_utils
+
+#%% Generate dataset
 
 random.seed(100)
 rowAmount = colAmount = 10 # map dimensions
@@ -57,3 +61,6 @@ for (sampleID, (initialMap, optimalMap)) in enumerate(data.batch(1)):
   DPGdataset.append(dgl.from_networkx(nxGraph, ["initialType", "optimalType"]))
 
 dgl.save_graphs("./DGLgraphData.bin", DPGdataset)
+
+#%% Check dataset file
+graphList, label = dgl.load_graphs("./DGLgraphData.bin")

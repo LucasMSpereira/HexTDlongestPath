@@ -28,12 +28,12 @@ class graphTransformer():
 
       # states of node and neighborhood as inputs
       nodeState = keras.Input(shape = (1,), name = "nodeState")
-      mapDefinition = keras.Input(shape = (1,), name = "map")
+      mapGraph = keras.Input(shape = (1,), name = "map")
       # embedding layer
       embedState = layers.Embedding(params["flagAmount"] + 4, params["embedDim"])
       # embed both inputs
       nodeEmbed = embedState(nodeState)
-      neighborEmbed = list(map(embedState, neighborhoodState))
+      neighborEmbed = list(map(embedState, mapGraph[0].nodes()))
       # initial residual connection for node state in first transformer layer
       h = deepcopy(nodeEmbed)
       # sequence of transformer layers
@@ -60,7 +60,7 @@ class graphTransformer():
         h = layers.BatchNormalization()(h + hDNN)
       transfOut = h
       classifyMLP = layers.Dense(1, activation = tf.nn.sigmoid)(transfOut)
-      model = keras.Model(inputs = [nodeState, mapDefinition], outputs = classifyMLP)
+      model = keras.Model(inputs = [nodeState, mapGraph], outputs = classifyMLP)
       model.summary()
       return model
       

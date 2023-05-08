@@ -10,18 +10,18 @@ import numpy as np
 import utilities as utils
 import networkx as nx
 import tensorflow as tf
-from datetime import datetime
 import data_utils
 #%% Definitions
 random.seed(100)
 rowAmount = colAmount = 10 # map dimensions
 ds = data_utils.dataManager(0, rowAmount, colAmount)
-goal = "both"
-# randomMap = ds.generateMap()
-dataTrain = ds.TFdata(goal) # dataset
-for (sampleID, (initialMap, OSPlength, optimalMap)) in enumerate(dataTrain.batch(1)):
-  if sampleID % 500 or sampleID == 0:
-    print(f"""Time: {datetime.now().strftime("%H:%M:%S")}""")
+goal = "optimalPath" # 'both', 'optimalPath', 'OSPlenth'
+dataTrain = ds.TFdata(goal, trainSplit = 1)[0] # dataset
+dataSize = len(dataTrain.batch(1))
+# for (sampleID, (initialMap, OSPlength, optimalMap)) in enumerate(dataTrain.batch(1)):
+for (sampleID, (initialMap, optimalMap)) in enumerate(dataTrain.batch(1)):
+  if sampleID % 1000 == 0:
+    print(f"""Sample {sampleID + 1}/{dataSize}""")
   # useful format for map definitions
   initialMap = list(np.asarray(initialMap).reshape(-1, 1).transpose()[0])
   optimalMap = list(np.asarray(optimalMap).reshape(-1, 1).transpose()[0])
@@ -54,7 +54,6 @@ for (sampleID, (initialMap, OSPlength, optimalMap)) in enumerate(dataTrain.batch
   # makes the graph directed with networkx.Graph.to_directed()
   # (all edges are bidirectional)
   DGLgraph = dgl.from_networkx(nxGraph, ["initialType", "optimalType"])
-graphM.plotMesh(0)
 #%%
 model = transfUtils.graphTransformer(
   { # parameters

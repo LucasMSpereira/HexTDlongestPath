@@ -308,26 +308,27 @@ class dataManager():
       optimalStr = fileDict["optimalStr"][index] # optimal map
       osp = fileDict["osp"][index] # OSP length
       if sampleNumber <= trainIndex: # sample goes to training split
-        if modelOutput == "both":
-          continue
-        elif modelOutput == "optimalPath":
+        if modelOutput == "optimalPath":
+          trainInitStr.append(list(map(int, initStr)))
           trainLabel.append(list(map(int, optimalStr)))
         elif modelOutput == "OSPlength":
+          trainInitStr.append(list(map(int, initStr)))
           trainLabel.append(osp)
-        trainInitStr.append(list(map(int, initStr)))
       else: # sample goes to validation split
-        valInitStr.append(list(map(int, initStr)))
-        if modelOutput == "both":
-          lengthAndOSP[0].append(osp)
-          lengthAndOSP[1].append(list(map(int, optimalStr)))
-        elif modelOutput == "optimalPath":
+        if modelOutput == "optimalPath":
+          valInitStr.append(list(map(int, initStr)))
           valLabel.append(list(map(int, optimalStr)))
         elif modelOutput == "OSPlength":
+          valInitStr.append(list(map(int, initStr)))
           valLabel.append(osp)
+      if modelOutput == "both":
+          lengthAndOSP[0].append(osp)
+          lengthAndOSP[1].append(list(map(int, optimalStr)))
+          trainInitStr.append(list(map(int, initStr)))
     # return tf Datasets for training and validation
     if modelOutput == "both":
       # include initial and optimal maps, and OSP length
-      return tf.data.Dataset.from_tensor_slices((valInitStr, *lengthAndOSP))
+      return tf.data.Dataset.from_tensor_slices((trainInitStr, *lengthAndOSP))
     else:
       # include initial map, and OSP length or optimal map
       return (

@@ -1,7 +1,10 @@
 # utilities for processing data
 
 import copy
+import torch
 from pathlib import WindowsPath
+import dgl
+from dgl.dataloading import GraphDataLoader as dglLoader
 import h5py
 import random
 import statistics
@@ -224,6 +227,31 @@ class dataManager():
       self.graphUtils.mapDefinition[0]
     ), indices, self.graphUtils.mapDefinition[0]
 
+  def readDGLdataset(self, trainPercent: float = 1.0, batchSize: int = 64) -> tuple:
+    """Read DGL dataset for graph transformer and return batched loaders"""
+    # read dataset file
+    dataset = dgl.load_graphs("./DGLgraphData.bin")[0]
+    # number of samples in training split
+    trainIndex = math.ceil(len(dataset) * trainPercent)
+    print(f"""
+    {trainIndex} samples for training
+    {len(dataset) - trainIndex} samples for validation
+    """)
+    # initialize lists for each split
+    trainGraph, valGraph = [], []
+    # iterate in dataset to populate splits
+    for (sampleNumber, sampleGraph) in enumerate(dataset):
+      if sampleNumber <= trainIndex: # sample goes to training split
+        trainGraph.append(sampleGraph)
+      else: # sample goes to validation split
+        valGraph.append(sampleGraph)
+    # return batched dgl data loaders for botch splits
+    return (
+      dglLoader(dglData(trainGraph), batch_size = batchSize, shuffle = True, num_workers = 8),
+      dglLoader(dglData(valGraph), batch_size = batchSize, shuffle = True, num_workers = 8)
+    )
+
+
   def saveDataPoint(self, sampleIndex: int, optMapIndex: int, ospLength: int):
     """Store sample in dataset"""
     # store concise encoding of initial map string
@@ -335,3 +363,14 @@ class dataManager():
         tf.data.Dataset.from_tensor_slices((trainInitStr, trainLabel)),
         tf.data.Dataset.from_tensor_slices((valInitStr, valLabel))
       )
+    
+class dglData(torch.utils.data.Dataset):
+  """Class to inherit torch dataset and define len() and getitem() methods"""
+  def __init__(self, graphList: list):
+    self.graphList = graphList
+  
+  def __len__(self):
+    return len(self.graphList)
+  
+  def __getitem__(self, idx):
+    return self.graphList[idx]

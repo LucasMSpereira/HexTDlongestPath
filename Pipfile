@@ -15,6 +15,7 @@ hexalattice = {path = "./extra/hexalattice-master.zip"}
 tf-agents = "*"
 tensorflow = "*"
 dgl = "*"
+torch = "*"
 
 [dev-packages]
 ipykernel = "*"

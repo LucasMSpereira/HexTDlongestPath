@@ -3,32 +3,21 @@ import os
 os.environ['DGLBACKEND'] = 'pytorch'
 import transfUtils
 import keras
-import dgl
 import random
-import tensorflow as tf
-import math
 import data_utils
-import torch
 random.seed(100)
-#%%
-ds = data_utils.dataManager(0, 10, 10)
-train, val = ds.readDGLdataset(trainPercent = 0.8, batchSize = 64)
 #%% Data
 rowAmount = colAmount = 10 # map dimensions
 ds = data_utils.dataManager(0, rowAmount, colAmount)
-dataTrain, dataVal = ds.readDGLdataset(0.8) # dataset
-batchSize = 100
-# organize both splits in batches
-batchesTrain = dataTrain.batch(batch_size = batchSize,
-  num_parallel_calls = tf.data.AUTOTUNE, deterministic = False
+mapGraph = ds.DGLgraph(
+    *random.choice(list(ds.TFdata("optimalPath", trainSplit = 1)[0].batch(1))),
+    10, 10
 )
-batchesVal = dataVal.batch(batch_size = batchSize,
-  num_parallel_calls = tf.data.AUTOTUNE, deterministic = False
-)
+train, val = ds.readDGLdataset(trainPercent = 0.9, batchSize = 1)
 #%%
 model = transfUtils.graphTransformer(
   { # parameters
-    "map": 1,
+    "mapGraph": mapGraph.to('cuda:0'),
     "flagAmount": 2, # number of flags in maps used in training
     "embedDim": 5, # dimension of state embedding
     "numberLayers": 5, # number of graph transformer layers

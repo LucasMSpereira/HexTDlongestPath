@@ -6,6 +6,7 @@ import tensorflow as tf
 from tensorflow import keras
 from keras import layers
 from dgl import function as fn
+import dgl
 
 class graphTransformer():
     
@@ -28,12 +29,10 @@ class graphTransformer():
 
       # states of node and neighborhood as inputs
       nodeState = keras.Input(shape = (1,), name = "nodeState")
-      mapGraph = keras.Input(shape = (1,), name = "map")
       # embedding layer
       embedState = layers.Embedding(params["flagAmount"] + 4, params["embedDim"])
       # embed both inputs
       nodeEmbed = embedState(nodeState)
-      neighborEmbed = list(map(embedState, mapGraph[0].nodes()))
       # initial residual connection for node state in first transformer layer
       h = deepcopy(nodeEmbed)
       # sequence of transformer layers
@@ -47,8 +46,9 @@ class graphTransformer():
         # attention. input dimension is always 'embedDim'.
         # output dimension changes in last transformer layer
         head = transfHead(
-          params["embedDim"], layerOutDim // params["numberHeads"], params["numberHeads"]
-        )(h, neighborEmbed)
+          layerOutDim // params["numberHeads"],
+          params["numberHeads"],
+        )(h, params["mapGraph"])
         # 'O' operation
         head = layers.Dense(layerOutDim)(head)
         # add first residual connection in current layer, then normalize
@@ -60,7 +60,7 @@ class graphTransformer():
         h = layers.BatchNormalization()(h + hDNN)
       transfOut = h
       classifyMLP = layers.Dense(1, activation = tf.nn.sigmoid)(transfOut)
-      model = keras.Model(inputs = [nodeState, mapGraph], outputs = classifyMLP)
+      model = keras.Model(inputs = [nodeState], outputs = classifyMLP)
       model.summary()
       return model
       
@@ -80,11 +80,11 @@ class transfHead(layers.Layer):
     
   """Head definition for graph transformer layer"""
 
-  def __init__(self, inDim, outDim, nHeads) -> None:
+  def __init__(self, outDim, nHeads) -> None:
     super().__init__()
-    self.Q = layers.Dense(inDim, outDim * nHeads)
-    self.K = layers.Dense(inDim, outDim * nHeads)
-    self.V = layers.Dense(inDim, outDim * nHeads)
+    self.Q = layers.Dense(outDim * nHeads)
+    self.K = layers.Dense(outDim * nHeads)
+    self.V = layers.Dense(outDim * nHeads)
     self.nHeads = nHeads
     self.outDim = outDim
 
@@ -97,15 +97,17 @@ class transfHead(layers.Layer):
     g.send_and_recv(g.edges(), fn.src_mul_edge('V_h', 'score', 'V_h'), fn.sum('V_h', 'wV'))
     g.send_and_recv(g.edges(), fn.copy_edge('score', 'score'), fn.sum('score', 'z'))
 
-  def call(self, state, g):
+  def call(self, state, graph):
+    # graphEmbed = list(map(self.embedLayer, g.nodes()))
     # build Q, K, V from node state.
     # reshape these matrices into
     # (number of nodes, number of heads, feature dimension).
     # store in respective node features in fields of DGL graph object
-    g.ndata['Q_h'] = tf.reshape(self.Q(state), (-1, self.nHeads, self.outDim))
-    g.ndata['K_h'] = tf.reshape(self.K(state), (-1, self.nHeads, self.outDim))
-    g.ndata['V_h'] = tf.reshape(self.V(state), (-1, self.nHeads, self.outDim))
+    # @tf.autograph.experimental.do_not_convert
+    graph.ndata['Q_h'] = tf.reshape(self.Q(state), (graph.num_nodes(), self.nHeads, self.outDim))
+    graph.ndata['K_h'] = tf.reshape(self.K(state), (graph.num_nodes(), self.nHeads, self.outDim))
+    graph.ndata['V_h'] = tf.reshape(self.V(state), (graph.num_nodes(), self.nHeads, self.outDim))
 
-    self.propagate_attention(g)
+    self.propagate_attention(graph)
 
-    return g.ndata['wV']/g.ndata['z']
+    return graph.ndata['wV']/graph.ndata['z']

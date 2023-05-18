@@ -86,6 +86,44 @@ class dataManager():
     spot["flag"] = [flagDict[i] for i in flagKey]
     return spot
 
+  def DGLgraph(self, initialMap, optimalMap, rowAmount: int, colAmount: int):
+    """Return individual DGL graph"""
+    # useful format for map definitions
+    initialMap = list(np.asarray(initialMap).reshape(-1, 1).transpose()[0])
+    optimalMap = list(np.asarray(optimalMap).reshape(-1, 1).transpose()[0])
+    # decode to graphManager format
+    self.decodeMapString(initialMap)
+    spotDict = self.decodeMapString(optimalMap)
+    # instantiate graphManager object for graph utilities
+    gm = graphM.graphManager(utils.listToStr(optimalMap),
+      rowAmount, colAmount, *utils.flagsFromDict(spotDict, colAmount)
+    )
+    # graph representation from string definition
+    nxGraph = gm.binaryToGraph(gm.mapDefinition[0])
+    # change element type of map representations, and combine them
+    nodeFeature = []
+    for (initialHexType, optimalHexPresence) in zip(initialMap, gm.mapDefinition[0]):
+      nodeFeature.append((int(initialHexType), int(optimalHexPresence)))
+    # annotate nodes of networkx graph.
+    # initial map is used as input to graph transformer. this map's nodes
+    # are annotated with type code: 0 = void, 1 = full,
+    # 2 = spawn, 3 = flag(s), 4 = base.
+    # optimal map serves as node labels. node features
+    # are binary representation: 0 = void, 1 = full
+    nx.set_node_attributes(
+      nxGraph,
+      {hexID: {
+          "initialType": initialHexType, "optimalType": optimalHexPresence
+        } for (hexID, (initialHexType, optimalHexPresence)) in enumerate(nodeFeature)
+      }
+    )
+    # build dgl graph from networkx and append to graph list.
+    # indicate attributes to copy over.
+    # makes the graph directed with networkx.Graph.to_directed()
+    # (bidirectional edges)
+    return dgl.from_networkx(nxGraph, ["initialType", "optimalType"])
+
+
   def generateDataset(self):
     """Generate dataset with requested amount of samples"""
     for sample in range(self.nSample):

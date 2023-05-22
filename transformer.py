@@ -17,7 +17,7 @@ train, val = ds.readDGLdataset(trainPercent = 0.9, batchSize = 1)
 #%%
 model = transfUtils.graphTransformer(
   { # parameters
-    "mapGraph": mapGraph.to('cuda:0'),
+    "mapGraph": mapGraph,
     "flagAmount": 2, # number of flags in maps used in training
     "embedDim": 5, # dimension of state embedding
     "numberLayers": 5, # number of graph transformer layers

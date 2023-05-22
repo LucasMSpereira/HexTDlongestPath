@@ -13,9 +13,9 @@ pytest = "*"
 matplotlib-inline = "*"
 hexalattice = {path = "./extra/hexalattice-master.zip"}
 tf-agents = "*"
-tensorflow = "*"
-dgl = "*"
 torch = "*"
+dgl = "*"
+tensorflow = "*"
 
 [dev-packages]
 ipykernel = "*"

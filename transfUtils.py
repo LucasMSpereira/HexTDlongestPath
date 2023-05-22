@@ -5,8 +5,8 @@ from copy import deepcopy
 import tensorflow as tf
 from tensorflow import keras
 from keras import layers
-from dgl import function as fn
 import dgl
+from dgl import function as fn
 
 class graphTransformer():
     

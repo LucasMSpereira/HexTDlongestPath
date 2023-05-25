@@ -3,17 +3,20 @@
 import numpy as np
 from copy import deepcopy
 import tensorflow as tf
+# import tensorflow.experimental.numpy as tnp
+# tnp.experimental_enable_numpy_behavior()
 from tensorflow import keras
 from keras import layers
 import dgl
 from dgl import function as fn
+from torch import nn
 
-class graphTransformer():
+class graphTransformer(nn.Module):
     
     """Graph transformer network"""
 
     def __init__(self, params: dict) -> None:
-      
+      super().__init__()
       # l graph transformer layers
         # input state, shape = 1
         # (1) embedded state, shape = embedDim
@@ -104,7 +107,9 @@ class transfHead(layers.Layer):
     # (number of nodes, number of heads, feature dimension).
     # store in respective node features in fields of DGL graph object
     # @tf.autograph.experimental.do_not_convert
-    graph.ndata['Q_h'] = tf.reshape(self.Q(state), (graph.num_nodes(), self.nHeads, self.outDim))
+    graph.ndata['Q_h'] = tf.reshape(
+      self.Q(state), (graph.num_nodes(), self.nHeads, self.outDim)
+    ).numpy()
     graph.ndata['K_h'] = tf.reshape(self.K(state), (graph.num_nodes(), self.nHeads, self.outDim))
     graph.ndata['V_h'] = tf.reshape(self.V(state), (graph.num_nodes(), self.nHeads, self.outDim))
 

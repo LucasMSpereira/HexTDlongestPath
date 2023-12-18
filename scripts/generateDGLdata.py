@@ -1,5 +1,4 @@
-# Script used to generate annotated DGL graph
-# dataset for graph transformer
+# Script used to generate annotated DGL graph dataset
 
 #%% Imports
 

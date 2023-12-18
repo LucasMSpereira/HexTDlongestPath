@@ -10,7 +10,7 @@ import torch.nn.functional as F
 
 class gcn(nn.Module):
     
-  """Graph transformer network"""
+  """Graph convolutional network"""
 
   def __init__(self, params: dict) -> None:
     super(gcn, self).__init__()

@@ -42,11 +42,11 @@ for (sampleID, (initialMap, optimalMap)) in enumerate(data.batch(1)):
   for (initialHexType, optimalHexPresence) in zip(initialMap, graphM.mapDefinition[0]):
     nodeFeature.append((int(initialHexType), int(optimalHexPresence)))
   # annotate nodes of networkx graph.
-  # initial map is used as input to graph transformer. this map's nodes
+  # initial map is used as input. this map's nodes
   # are annotated with type code: 0 = void, 1 = full,
   # 2 = spawn, 3 = flag(s), 4 = base.
   # optimal map serves as node labels. node features
-  # are binary representation: 0=void, 1=full
+  # have binary representation: 0=void, 1=full
   nx.set_node_attributes(
     nxGraph,
     {hexID: {

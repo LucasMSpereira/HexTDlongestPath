@@ -16,8 +16,8 @@ class gcn(nn.Module):
     super(gcn, self).__init__()
     
     self.conv1 = GraphConv(params["inDim"], params["hDim"], activation = params["activFunction"])
-    self.conv2 = GraphConv(params["hDim"], 1, activation = F.sigmoid)
+    self.conv2 = GraphConv(params["hDim"], 1)
 
   def forward(self, g, inFeature):
     h = self.conv1(g, inFeature)
-    return self.conv2(g, h)
+    return dgl.mean_nodes(g, "h")

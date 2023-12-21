@@ -266,7 +266,7 @@ class dataManager():
     ), indices, self.graphUtils.mapDefinition[0]
 
   def readDGLdataset(self, trainPercent: float = 1.0, batchSize: int = 64) -> tuple:
-    """Read DGL dataset for graph transformer and return batched loaders"""
+    """Read DGL dataset and return batched loaders"""
     # read dataset file
     dataset = dgl.load_graphs("./DGLgraphData.bin")[0]
     # number of samples in training split
@@ -285,8 +285,8 @@ class dataManager():
         valGraph.append(sampleGraph)
     # return batched dgl data loaders for botch splits
     return (
-      dglLoader(dglData(trainGraph), batch_size = batchSize, shuffle = True, num_workers = 8),
-      dglLoader(dglData(valGraph), batch_size = batchSize, shuffle = True, num_workers = 8)
+      dglLoader(dglData(trainGraph), batch_size = batchSize, shuffle = True),
+      dglLoader(dglData(valGraph), batch_size = batchSize, shuffle = True)
     )
 
 
@@ -403,7 +403,10 @@ class dataManager():
       )
     
 class dglData(torch.utils.data.Dataset):
-  """Class to inherit torch dataset and define len() and getitem() methods"""
+  """
+  Class to inherit torch dataset and define len() and
+  getitem() methods. Used to read dataset in DGL format.
+  """
   def __init__(self, graphList: list):
     self.graphList = graphList
   

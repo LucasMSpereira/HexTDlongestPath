@@ -1,12 +1,8 @@
 # definitions for implementing the graph transformer
 
-import numpy as np
-from copy import deepcopy
 import dgl
 from dgl.nn import GraphConv
-from dgl import function as fn
 from torch import nn
-import torch.nn.functional as F
 
 class gcn(nn.Module):
     
@@ -20,4 +16,6 @@ class gcn(nn.Module):
 
   def forward(self, g, inFeature):
     h = self.conv1(g, inFeature)
+    h = self.conv2(g, h)
+    g.ndata["h"] = h
     return dgl.mean_nodes(g, "h")

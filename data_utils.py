@@ -284,11 +284,7 @@ class dataManager():
       else: # sample goes to validation split
         valGraph.append(sampleGraph)
     # return batched dgl data loaders for botch splits
-    return (
-      dglLoader(dglData(trainGraph), batch_size = batchSize, shuffle = True),
-      dglLoader(dglData(valGraph), batch_size = batchSize, shuffle = True)
-    )
-
+    if trainPercent < 1:
 
   def saveDataPoint(self, sampleIndex: int, optMapIndex: int, ospLength: int):
     """Store sample in dataset"""

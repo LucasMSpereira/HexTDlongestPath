@@ -268,23 +268,30 @@ class dataManager():
   def readDGLdataset(self, trainPercent: float = 1.0, batchSize: int = 64) -> tuple:
     """Read DGL dataset and return batched loaders"""
     # read dataset file
-    dataset = dgl.load_graphs("./DGLgraphData.bin")[0]
+    dataset = dgl.load_graphs("./DGLgraphData.bin")
     # number of samples in training split
-    trainIndex = math.ceil(len(dataset) * trainPercent)
+    numSamples = len(dataset[0])
+    trainIndex = math.ceil(numSamples * trainPercent)
     print(f"""
     {trainIndex} samples for training
-    {len(dataset) - trainIndex} samples for validation
+    {numSamples - trainIndex} samples for validation
     """)
     # initialize lists for each split
     trainGraph, valGraph = [], []
     # iterate in dataset to populate splits
-    for (sampleNumber, sampleGraph) in enumerate(dataset):
+    for (sampleNumber, sample) in enumerate(zip(dataset[0], dataset[1]["gLabel"])):
       if sampleNumber <= trainIndex: # sample goes to training split
-        trainGraph.append(sampleGraph)
+        trainGraph.append(sample)
       else: # sample goes to validation split
-        valGraph.append(sampleGraph)
+        valGraph.append(sample)
     # return batched dgl data loaders for botch splits
     if trainPercent < 1:
+      return (
+        dglLoader(dglData(trainGraph), batch_size = batchSize, shuffle = True),
+        dglLoader(dglData(valGraph), batch_size = batchSize, shuffle = True)
+      )
+    else:
+      return dglLoader(dglData(trainGraph), batch_size = batchSize, shuffle = True)
 
   def saveDataPoint(self, sampleIndex: int, optMapIndex: int, ospLength: int):
     """Store sample in dataset"""

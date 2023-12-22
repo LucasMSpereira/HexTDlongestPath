@@ -213,7 +213,7 @@ class graphManager():
       if self.mapDefinition[mapID][hexa] == 0:
         colors[hexa, :] = 1
     # shortest path in shades of green
-    for (stepID, hexa) in enumerate(totalPath):
+    for hexa in totalPath:
       colors[hexa, :] = [0, 1 - 0.45 * np.random.rand(), 0]
     # spawn in red
     for spawn in self.spot["spawn"]:

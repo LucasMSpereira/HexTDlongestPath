@@ -62,7 +62,7 @@ class dataManager():
 
   def decodeMapString(self, encodedMapString: list) -> list:
     """
-    Decode map string from HDF5 file back to graphManager format.
+    Decode map string from HDF5 file (in place) back to graphManager format.
     Also returns 'spot' dictionary with flags sorted by hex ID.
     """
     spot = {"spawn": [], "flag": [], "base": []}

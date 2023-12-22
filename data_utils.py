@@ -410,4 +410,4 @@ class dglData(torch.utils.data.Dataset):
     return len(self.graphList)
   
   def __getitem__(self, idx):
-    return self.graphList[idx]
+    return self.graphList[idx][0], self.graphList[idx][1]

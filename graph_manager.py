@@ -220,7 +220,10 @@ class graphManager():
       colors[spawn, :] = [0.8, 0, 0]
     # flags in orange
     for (flagNum, hexa) in enumerate(self.spot["flag"]):
-      colors[hexa, :] = list(map(lambda x: x * (1 - 0.5 * flagNum / len(self.spot["flag"])), [1, 128 / 255, 0]))
+      colors[hexa, :] = list(map(
+        lambda x: x * (1 - 0.5 * flagNum / len(self.spot["flag"])),
+        [1, 128 / 255, 0]
+      ))
     # base in blue
     colors[self.spot["base"], :] = [0, 0, 0.8]
     

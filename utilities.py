@@ -86,3 +86,6 @@ def pathLengthFromString(mapDef: list, nRow: int, nCol: int):
     listToStr(mapDef), nRow, nCol, *flagsFromDict(spotDict, nCol)
   )
   return graphM.totalSteps(graphM.mapDefinition[0])
+
+def strToList(mapStr: str) -> list:
+  return [x for x in mapStr]

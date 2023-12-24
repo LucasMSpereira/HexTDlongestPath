@@ -1,7 +1,5 @@
 # Script used to generate annotated DGL graph dataset
-
 #%% Imports
-
 import os
 os.environ['DGLBACKEND'] = 'pytorch'
 from graph_manager import graphManager
@@ -13,10 +11,8 @@ import numpy as np
 import utilities as utils
 import networkx as nx
 import data_utils
-
-#%% Generate dataset
-
 random.seed(100)
+#%% Setup variables
 rowAmount = colAmount = 10 # map dimensions
 ds = data_utils.dataManager(0, rowAmount, colAmount)
 goal = "optimalPath" # 'both', 'optimalPath', 'OSPlenth'

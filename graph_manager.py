@@ -32,7 +32,9 @@ class graphManager():
         flagRow * self.nCol + flagCol
       )
     # list to store map definitions as binary lists
-    self.mapDefinition = [self.stringToBinary(initialMapString)]
+    self.mapDefinition = [
+      self.stringToBinary(initialMapString, updateSpot = True)
+    ]
     initialMapGraph = self.binaryToGraph(self.mapDefinition[0])
     # nodes of each section
     pathsInfo = self.allPaths(initialMapGraph)

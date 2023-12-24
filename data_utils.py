@@ -158,7 +158,7 @@ class dataManager():
         # attempt to create graph representation of map
         return nx.from_dict_of_lists(connection)
       except: # discard map in case of isolated spot
-        return self.generateMap()
+        self.generateMap()
 
   def optimizeSample(self):
     """

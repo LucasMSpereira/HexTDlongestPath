@@ -3,11 +3,12 @@
 #%% Imports
 
 import os
-os.environ['DGLBACKEND'] = 'tensorflow'
+os.environ['DGLBACKEND'] = 'pytorch'
 from graph_manager import graphManager
 from datetime import datetime
 import dgl
 import random
+import torch
 import numpy as np
 import utilities as utils
 import networkx as nx
@@ -49,9 +50,11 @@ for (sampleID, (initialMap, optimalMap)) in enumerate(data.batch(1)):
   # have binary representation: 0=void, 1=full
   nx.set_node_attributes(
     nxGraph,
-    {hexID: {
-        "initialType": initialHexType, "optimalType": optimalHexPresence
-      } for (hexID, (initialHexType, optimalHexPresence)) in enumerate(nodeFeature)
+    {
+      hexID: {
+        "initialType": torch.tensor(initialHexType, dtype = torch.int32),
+        "optimalType": torch.tensor(optimalHex, dtype = torch.int32)
+      } for (hexID, (initialHexType, optimalHex)) in enumerate(nodeFeature)
     }
   )
   # build dgl graph from networkx and append to graph list.

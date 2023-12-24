@@ -202,8 +202,8 @@ class dataManager():
       initStr = list(map(list, list(f['initial_string'].asstr())))
       optStr = list(map(list, list(f['optimal_string'].asstr())))
     if not decode:
-      encodedInitStr = copy.deepcopy(initStr)
-      encodedOptimalStr = copy.deepcopy(optStr)
+      encodedInitStr = list(map(utils.listToStr, copy.deepcopy(initStr)))
+      encodedOptimalStr = list(map(utils.listToStr, copy.deepcopy(optStr)))
     # get number of rows and columns in map
     numRow = self.nRow
     numCol = self.nCol

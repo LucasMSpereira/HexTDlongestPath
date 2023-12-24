@@ -11,7 +11,7 @@ ds = data_utils.dataManager(
   filePath = "path",
   amountOfSamples = 0, nRow = 10, nCol = 10
 )
-randomMap = ds.generateMap()
+ds.generateMap()
 #%%
 def pathLength(binaryMap: list, solution_idx) -> int:
   """

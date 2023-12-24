@@ -249,7 +249,7 @@ class graphManager():
     """Store binary representation of map"""
     self.mapDefinition.append(list(map(int, mapDef)))
 
-  def stringToBinary(self, mapString: str):
+  def stringToBinary(self, mapString: str, updateSpot = False):
     """
     Get binary representation from (decoded)
     string of integers describing hexagons:
@@ -261,8 +261,7 @@ class graphManager():
       raise Exception("graphManager.stringToBinary() called on encoded map.")
     # binary list indicating free hexagons
     binaryList = []
-    # populate binaryList and store ID of
-    # 'spots' (spawn, flags, base)
+    # populate binaryList
     for (index, code) in enumerate(mapString):
       if int(code) == 0: # void hexagon
         binaryList.append(0)
@@ -270,12 +269,14 @@ class graphManager():
         binaryList.append(1)
       elif int(code) == 2: # spawn
         binaryList.append(1)
-        self.spot["spawn"].append(index)
+        if updateSpot:
+          self.spot["spawn"].append(index)
       elif int(code) == 3: # flag
         binaryList.append(1)
       elif int(code) == 4: # player's base
         binaryList.append(1)
-        self.spot["base"].append(index)
+        if updateSpot:
+          self.spot["base"].append(index)
     return binaryList
 
   def totalSteps(self, binaryMap: list) -> int:

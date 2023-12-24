@@ -11,13 +11,13 @@ scipy = "*"
 h5py = "*"
 pytest = "*"
 matplotlib-inline = "*"
-hexalattice = {path = "./extra/hexalattice-master.zip"}
-dgl = "*"
 torch = "*"
 tensorflow = "*"
+dgl = "*"
 
 [dev-packages]
 ipykernel = "*"
+hexalattice = "*"
 
 [requires]
 python_version = "3.8"

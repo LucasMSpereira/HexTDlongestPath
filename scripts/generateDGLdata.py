@@ -15,29 +15,26 @@ random.seed(100)
 #%% Setup variables
 rowAmount = colAmount = 10 # map dimensions
 ds = data_utils.dataManager(0, rowAmount, colAmount)
-goal = "optimalPath" # 'both', 'optimalPath', 'OSPlenth'
-data = ds.TFdata(goal, trainSplit = 1)[0] # dataset
+# Dataset (with possible goals 'both', 'optimalPath', 'OSPlenth')
+data = ds.TFdata("both", trainSplit = 1)
+ds.generateMap()
 dataSize = len(data.batch(1))
-DPGdataset = []
-for (sampleID, (initialMap, optimalMap)) in enumerate(data.batch(1)):
-  if sampleID % 1000 == 0:
+#%% Generate dataset
+DGLdataset = [] # list of samples
+OSPlengthList = [] # list of OSP lengths of each sample
+for (sampleID, (initialMap, OSPlength, optimalMap)) in enumerate(data.batch(1)):
+# for (sampleID, (initialMap, optimalMap)) in enumerate(data.batch(1)):
+  if sampleID % 4000 == 0:
     print(f"""Sample {sampleID}/{dataSize} Time: {datetime.now().strftime("%H:%M:%S")}""")
   # useful format for map definitions
   initialMap = list(np.asarray(initialMap).reshape(-1, 1).transpose()[0])
   optimalMap = list(np.asarray(optimalMap).reshape(-1, 1).transpose()[0])
-  # decode to graphManager format
-  ds.decodeMapString(initialMap)
-  spotDict = ds.decodeMapString(optimalMap)
-  # instantiate graphManager object for graph utilities
-  graphM = graphManager(utils.listToStr(optimalMap),
-    rowAmount, colAmount, *utils.flagsFromDict(spotDict, colAmount)
-  )
   # graph representation from string definition
-  nxGraph = graphM.binaryToGraph(graphM.mapDefinition[0])
+  nxGraph = ds.graphUtils.binaryToGraph(ds.graphUtils.stringToBinary(utils.listToStr(initialMap)))
   # change element type of map representations, and combine them
   nodeFeature = []
-  for (initialHexType, optimalHexPresence) in zip(initialMap, graphM.mapDefinition[0]):
-    nodeFeature.append((int(initialHexType), int(optimalHexPresence)))
+  for (initialHexType, optimalHex) in zip(initialMap, optimalMap):
+    nodeFeature.append((int(initialHexType), int(optimalHex)))
   # annotate nodes of networkx graph.
   # initial map is used as input. this map's nodes
   # are annotated with type code: 0 = void, 1 = full,

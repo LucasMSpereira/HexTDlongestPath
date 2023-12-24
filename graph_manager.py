@@ -257,6 +257,8 @@ class graphManager():
     2 - spawn; 3 - flag(s)
     4 - player's base
     """
+    if '5' in mapString:
+      raise Exception("graphManager.stringToBinary() called on encoded map.")
     # binary list indicating free hexagons
     binaryList = []
     # populate binaryList and store ID of

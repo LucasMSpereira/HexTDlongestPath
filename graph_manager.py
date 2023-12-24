@@ -194,8 +194,12 @@ class graphManager():
     """Plot hexagon lattice"""
     mapSize = len(self.mapDefinition[mapID])
     # initial full map with shades of grey
-    colors = np.zeros([mapSize, 3]) + np.array([np.fromiter(itertools.repeat(np.random.rand(), times = 3), float) for _ in range(mapSize)]) * 0.3
-    step = -1
+    colors = np.zeros([mapSize, 3]) + 0.3 * np.array([
+      np.fromiter(
+        itertools.repeat(np.random.rand(), times = 3),
+        float
+      ) for _ in range(mapSize)
+    ])
     totalPath = []
     spotSection = self.allPaths(self.binaryToGraph(self.mapDefinition[mapID]))
     for (secNum, section) in enumerate(spotSection):

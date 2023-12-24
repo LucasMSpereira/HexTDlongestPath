@@ -251,10 +251,10 @@ class graphManager():
 
   def stringToBinary(self, mapString: str):
     """
-    Get binary representation
-    from string of integers describing hexagons:
+    Get binary representation from (decoded)
+    string of integers describing hexagons:
     0 - void; 1 - full
-    2 - spawn; 3 - flag
+    2 - spawn; 3 - flag(s)
     4 - player's base
     """
     # binary list indicating free hexagons

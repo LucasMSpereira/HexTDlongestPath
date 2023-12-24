@@ -50,10 +50,7 @@ class graphManager():
        self.storeLength(self.totalSteps(pathsInfo))
 
   def allPaths(self, mapGraph):
-    """
-    Get paths for each section and
-    their respective lengths
-    """
+    """Get paths for each section"""
     intermediatePath = []
     # A* in each section:
     for (source, target) in utils.pairwise(itertools.chain(*self.spot.values())):

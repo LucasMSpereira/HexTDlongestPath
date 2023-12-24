@@ -63,3 +63,11 @@ dgl.save_graphs("./DGLgraphData.bin", DPGdataset)
 
 #%% Check dataset file
 graphList, label = dgl.load_graphs("./DGLgraphData.bin")
+print(f"type(graphList): {type(graphList)}")
+print(f"len(graphList): {len(graphList)}")
+[print(g) for g in graphList[:5]]
+print(f"\ntype(label): {type(label)}")
+print(f"'label' keys: {label.keys()}")
+print(f"type(label['gLabel']): {type(label['gLabel'])}")
+print(f"label['gLabel'].size(): {label['gLabel'].size()}")
+print(label['gLabel'][:5])

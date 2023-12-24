@@ -205,11 +205,9 @@ class graphManager():
     for (secNum, section) in enumerate(spotSection):
       if secNum == 0 or secNum == len(section) - 1:
         for hexa in section:
-          step += 1
           totalPath.append(hexa)
       else: # intermediate section
         for hexa in range(1, len(section) - 1):
-          step += 1
           totalPath.append(section[hexa])
     # void hexagons in white
     for hexa in range(mapSize):

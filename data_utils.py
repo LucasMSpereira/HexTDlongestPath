@@ -287,11 +287,11 @@ class dataManager():
     # return batched dgl data loaders for botch splits
     if trainPercent < 1:
       return (
-        dglLoader(dglData(trainGraph), batch_size = batchSize, shuffle = True),
-        dglLoader(dglData(valGraph), batch_size = batchSize, shuffle = True)
+        dglLoader(dglData(trainGraph), batch_size = batchSize, shuffle = True, drop_last = True),
+        dglLoader(dglData(valGraph), batch_size = batchSize, shuffle = True, drop_last = True)
       )
     else:
-      return dglLoader(dglData(trainGraph), batch_size = batchSize, shuffle = True)
+      return dglLoader(dglData(trainGraph), batch_size = batchSize, shuffle = True, drop_last = True)
 
   def saveDataPoint(self, sampleIndex: int, optMapIndex: int, ospLength: int):
     """Store sample in dataset"""

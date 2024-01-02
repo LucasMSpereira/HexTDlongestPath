@@ -1,6 +1,7 @@
 # Script used to generate annotated DGL graph dataset
 #%% Imports
 import os
+from copy import deepcopy
 os.environ['DGLBACKEND'] = 'pytorch'
 from graph_manager import graphManager
 from datetime import datetime
@@ -29,8 +30,6 @@ for (sampleID, (initialMap, OSPlength, optimalMap)) in enumerate(data.batch(1)):
   # useful format for map definitions
   initialMap = list(np.asarray(initialMap).reshape(-1, 1).transpose()[0])
   optimalMap = list(np.asarray(optimalMap).reshape(-1, 1).transpose()[0])
-  # graph representation from string definition
-  nxGraph = ds.graphUtils.binaryToGraph(ds.graphUtils.stringToBinary(utils.listToStr(initialMap)))
   # change element type of map representations, and combine them
   nodeFeature = []
   for (initialHexType, optimalHex) in zip(initialMap, optimalMap):
@@ -41,6 +40,10 @@ for (sampleID, (initialMap, OSPlength, optimalMap)) in enumerate(data.batch(1)):
   # 2 = spawn, 3 = flag(s), 4 = base.
   # optimal map serves as node labels. node features
   # have binary representation: 0=void, 1=full
+  # graph representation from string definition
+  decodedMap = deepcopy(initialMap)
+  ds.decodeMapString(decodedMap)
+  nxGraph = ds.graphUtils.binaryToGraph(ds.graphUtils.stringToBinary(utils.listToStr(decodedMap)))
   nx.set_node_attributes(
     nxGraph,
     {
@@ -50,14 +53,31 @@ for (sampleID, (initialMap, OSPlength, optimalMap)) in enumerate(data.batch(1)):
       } for (hexID, (initialHexType, optimalHex)) in enumerate(nodeFeature)
     }
   )
+  # nx.set_edge_attributes(nxGraph, [1], name = "name")
   # build dgl graph from networkx and append to graph list.
-  # indicate attributes to copy over.
-  # makes the graph directed with networkx.Graph.to_directed()
-  # (bidirectional edges)
-  DPGdataset.append(dgl.from_networkx(nxGraph, ["initialType", "optimalType"]))
-
-dgl.save_graphs("./DGLgraphData.bin", DPGdataset)
-
+  # indicate attributes to copy over. graph is made directed
+  # with networkx.Graph.to_directed() (bidirectional edges).
+  # dgl.add_self_loop() avoids problem with DGL convolution
+  # in graphs with nodes to which no other
+  # nodes point (or isolated nodes)
+  DGLdataset.append(
+    dgl.add_self_loop(
+      dgl.from_networkx(
+        nx.to_directed(nxGraph),
+        ["initialType", "optimalType"]
+      )
+    )
+  )
+  if OSPlength.ndim == 0:
+    OSPlengthList.append(OSPlength)
+  elif OSPlength.ndim == 1:
+    OSPlengthList.append(OSPlength[0].numpy())
+  else:
+    print("ANOTHER DIM")
+dgl.save_graphs( # save dataset
+  "./DGLgraphData.bin", DGLdataset,
+  {"gLabel": torch.tensor(OSPlengthList)}
+)
 #%% Check dataset file
 graphList, label = dgl.load_graphs("./DGLgraphData.bin")
 print(f"type(graphList): {type(graphList)}")
